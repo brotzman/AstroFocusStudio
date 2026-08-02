@@ -1,0 +1,24 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+  <Bundle
+      Name="AstroFocus Studio"
+      Manufacturer="Thomas Brotze"
+      Version="$(var.BundleVersion)"
+      UpgradeCode="2EA9A633-D6A2-4DB9-A82F-5955949C291C"
+      IconSourceFile="$(var.IconPath)">
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication
+          Theme="hyperlinkLicense"
+          LicenseUrl=""
+          ShowVersion="yes"
+          SuppressOptionsUI="yes" />
+    </BootstrapperApplication>
+    <Chain>
+      <MsiPackage
+          SourceFile="$(var.MsiPath)"
+          Vital="yes"
+          Visible="no"
+          Compressed="yes" />
+    </Chain>
+  </Bundle>
+</Wix>

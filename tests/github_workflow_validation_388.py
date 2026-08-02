@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+"""Static contract checks for the GitHub Actions and WiX packaging files."""
+from __future__ import annotations
+
+import re
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+passed = 0
+total = 0
+
+
+def check(condition: bool, message: str) -> None:
+    global passed, total
+    total += 1
+    if condition:
+        passed += 1
+        print(f"PASS: {message}")
+    else:
+        print(f"FAIL: {message}")
+
+
+workflow_path = ROOT / ".github" / "workflows" / "windows-build.yml"
+workflow = workflow_path.read_text(encoding="utf-8")
+package = (ROOT / "installer" / "wix" / "Package.wxs").read_text(encoding="utf-8")
+bundle = (ROOT / "installer" / "wix" / "Bundle.wxs").read_text(encoding="utf-8")
+wix_build = (ROOT / "installer" / "build-wix.ps1").read_text(encoding="utf-8")
+artifact_build = (ROOT / "scripts" / "Build-GitHubArtifacts.ps1").read_text(encoding="utf-8")
+installer_test = (ROOT / "scripts" / "Test-GitHubInstaller.ps1").read_text(encoding="utf-8")
+gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+
+check("runs-on: windows-2022" in workflow, "Windows build uses a fixed supported runner")
+check("actions/checkout@v7" in workflow, "checkout action uses the current v7 major")
+check("actions/upload-artifact@v7" in workflow, "artifact upload uses the current v7 major")
+check("actions/download-artifact@v8" in workflow, "release download uses the current v8 major")
+check("actions/setup-python@v7" in workflow, "Python setup uses the current v7 major")
+check("actions/setup-dotnet@v6" in workflow, "dotnet setup uses the current v6 major")
+check("Build-GitHubArtifacts.ps1" in workflow, "workflow runs the complete artifact build")
+check("Test-GitHubInstaller.ps1" in workflow, "workflow runs the installer smoke test")
+check("run: bash ./scripts/Run-NativeTests.sh" in workflow, "workflow invokes native tests through bash without relying on the executable bit")
+check("run: ./scripts/Run-NativeTests.sh" not in workflow, "workflow has no direct executable-bit-dependent native test invocation")
+gitattributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
+check("*.sh text eol=lf" in gitattributes, "shell scripts are checked out with LF line endings")
+check("permissions:\n  contents: read" in workflow, "default workflow permissions are read-only")
+check("contents: write" in workflow, "release job explicitly receives write permission")
+check("Prepare CI diagnostics" in workflow, "workflow creates the diagnostic directory before the Windows build")
+check("build-package.log" in workflow and "Tee-Object" in workflow, "Windows build output is persisted even when packaging fails")
+check("path: artifacts/test-logs/" in workflow and "if-no-files-found: error" in workflow, "diagnostic upload always requires a real log artifact")
+check("$LogRoot = Join-Path $ArtifactsRoot 'test-logs'" in artifact_build, "artifact build preserves the CI diagnostic directory")
+
+for source in (
+    "tests/command_line_args_validation_388.cpp",
+    "tests/frontend_logic_validation_388.cpp",
+    "tests/actual_backend_validation_388.cpp",
+):
+    check(source in (ROOT / "scripts" / "Run-NativeTests.sh").read_text(encoding="utf-8"), f"native test is included: {source}")
+
+try:
+    ET.parse(ROOT / "installer" / "wix" / "Package.wxs")
+    xml_ok = True
+except ET.ParseError:
+    xml_ok = False
+check(xml_ok, "Package.wxs is well-formed XML")
+try:
+    ET.parse(ROOT / "installer" / "wix" / "Bundle.wxs")
+    bundle_xml_ok = True
+except ET.ParseError:
+    bundle_xml_ok = False
+check(bundle_xml_ok, "Bundle.wxs is well-formed XML")
+
+expected_payload = {
+    "AstroFocusStudio.exe",
+    "AstroFocusEngine.exe",
+    "AstroFocusCameraHost.exe",
+    "AstroFocusFocuserHost.exe",
+    "AstroFocusFocuserSetup.exe",
+    "AstroFocusUpdater.exe",
+    "AstroFocusUpdater.ps1",
+    "AstroFocusSetup.exe",
+    "AstroFocusSetup.ps1",
+    "update-public-key.cer",
+    "release-manifest.json",
+    "README_DE.md",
+    "KNOWN_LIMITATIONS_3_8_8.txt",
+    "UNSIGNED_DEVELOPMENT_BUILD.txt",
+}
+found_payload = set(re.findall(r'Source="\$\(var\.Payload\)\\([^"\\]+)"', package))
+check(expected_payload == found_payload, "WiX package contains exactly the current 3.8.8 payload")
+check("3_8_3" not in package and "3_8_7" not in package, "WiX package has no stale version references")
+check(package.count("<Component Id=\"Cmp") >= len(expected_payload), "payload files use independent repair components")
+check('IconSourceFile="$(var.IconPath)"' in bundle, "bundle uses the product icon")
+check('Compressed="yes"' in bundle, "bundle embeds the MSI")
+
+check("WixVersion = '5.0.2'" in wix_build, "WiX tool version is pinned")
+check('WixToolset.BootstrapperApplications.wixext/$WixVersion' in wix_build, "WiX CLI uses the BootstrapperApplications extension name and pinned version")
+check('IconPath=$iconPath' in wix_build, "WiX build receives the icon path")
+check("dotnet.Source tool install" in artifact_build, "WiX is installed as a local .NET tool")
+check("Assert-Pe64" in artifact_build, "all generated binaries are checked as Windows x64 PE files")
+check("release-manifest.json" in artifact_build, "release manifest is generated before packaging")
+check("/repair" in installer_test and "AstroFocusFocuserHost.exe" in installer_test, "installer test verifies MSI repair of a missing component")
+check("/uninstall" in installer_test and "msiexec.exe" in installer_test, "installer test covers bundle and MSI removal")
+check("--health-check" in installer_test, "installer test runs installed health checks")
+check("artifacts/" in gitignore and "dist/" in gitignore and "*.exe" in gitignore, "generated build outputs are ignored")
+
+print(f"GitHub/WiX contract tests: {passed}/{total}")
+sys.exit(0 if passed == total else 1)

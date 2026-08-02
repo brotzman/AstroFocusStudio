@@ -1,0 +1,111 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+      Name="AstroFocus Studio"
+      Manufacturer="Thomas Brotze"
+      Version="$(var.ProductVersion)"
+      UpgradeCode="7FC628C4-A578-47F5-A23E-65721D916381"
+      Scope="perMachine"
+      InstallerVersion="500"
+      Language="1031">
+
+    <MajorUpgrade
+        DowngradeErrorMessage="Eine neuere AstroFocus-Studio-Version ist bereits installiert."
+        Schedule="afterInstallInitialize" />
+
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Icon Id="ProductIcon" SourceFile="$(var.IconPath)" />
+    <Property Id="ARPPRODUCTICON" Value="ProductIcon" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="AstroFocus Studio">
+        <!-- One file per component makes MSI repair detect and restore every payload file. -->
+        <Component Id="CmpAstroFocusStudioExe" Guid="*" Bitness="always64">
+          <File Id="AstroFocusStudioExe" Source="$(var.Payload)\AstroFocusStudio.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="CmpAstroFocusEngineExe" Guid="*" Bitness="always64">
+          <File Id="AstroFocusEngineExe" Source="$(var.Payload)\AstroFocusEngine.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="CmpAstroFocusCameraHostExe" Guid="*" Bitness="always64">
+          <File Id="AstroFocusCameraHostExe" Source="$(var.Payload)\AstroFocusCameraHost.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="CmpAstroFocusFocuserHostExe" Guid="*" Bitness="always64">
+          <File Id="AstroFocusFocuserHostExe" Source="$(var.Payload)\AstroFocusFocuserHost.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="CmpAstroFocusFocuserSetupExe" Guid="*" Bitness="always64">
+          <File Id="AstroFocusFocuserSetupExe" Source="$(var.Payload)\AstroFocusFocuserSetup.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="CmpAstroFocusUpdaterExe" Guid="*" Bitness="always64">
+          <File Id="AstroFocusUpdaterExe" Source="$(var.Payload)\AstroFocusUpdater.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="CmpAstroFocusUpdaterScript" Guid="*" Bitness="always64">
+          <File Id="AstroFocusUpdaterScript" Source="$(var.Payload)\AstroFocusUpdater.ps1" KeyPath="yes" />
+        </Component>
+        <Component Id="CmpAstroFocusSetupExe" Guid="*" Bitness="always64">
+          <File Id="AstroFocusSetupExe" Source="$(var.Payload)\AstroFocusSetup.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="CmpAstroFocusSetupScript" Guid="*" Bitness="always64">
+          <File Id="AstroFocusSetupScript" Source="$(var.Payload)\AstroFocusSetup.ps1" KeyPath="yes" />
+        </Component>
+        <Component Id="CmpUpdatePublicKey" Guid="*" Bitness="always64">
+          <File Id="UpdatePublicKey" Source="$(var.Payload)\update-public-key.cer" KeyPath="yes" />
+        </Component>
+        <Component Id="CmpReleaseManifest" Guid="*" Bitness="always64">
+          <File Id="ReleaseManifest" Source="$(var.Payload)\release-manifest.json" KeyPath="yes" />
+        </Component>
+        <Component Id="CmpReadmeDe" Guid="*" Bitness="always64">
+          <File Id="ReadmeDe" Source="$(var.Payload)\README_DE.md" KeyPath="yes" />
+        </Component>
+        <Component Id="CmpKnownLimitations" Guid="*" Bitness="always64">
+          <File Id="KnownLimitations" Source="$(var.Payload)\KNOWN_LIMITATIONS_3_8_8.txt" KeyPath="yes" />
+        </Component>
+        <?ifdef DevelopmentBuild ?>
+        <Component Id="CmpUnsignedDevelopmentMarker" Guid="*" Bitness="always64">
+          <File Id="UnsignedDevelopmentMarker" Source="$(var.Payload)\UNSIGNED_DEVELOPMENT_BUILD.txt" KeyPath="yes" />
+        </Component>
+        <?endif?>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ProgramMenuProductFolder" Name="AstroFocus Studio">
+        <Component Id="StartMenuShortcut" Guid="*" Bitness="always64">
+          <Shortcut
+              Id="StartMenuShortcut"
+              Name="AstroFocus Studio"
+              Description="AstroFocus Studio 3.8.8"
+              Target="[INSTALLFOLDER]AstroFocusStudio.exe"
+              WorkingDirectory="INSTALLFOLDER" />
+          <RemoveFolder Id="RemoveProgramMenuProductFolder" On="uninstall" />
+          <RegistryValue
+              Root="HKLM"
+              Key="Software\Thomas Brotze\AstroFocus Studio"
+              Name="StartMenuShortcut"
+              Type="integer"
+              Value="1"
+              KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="MainFeature" Title="AstroFocus Studio" Level="1">
+      <ComponentRef Id="CmpAstroFocusStudioExe" />
+      <ComponentRef Id="CmpAstroFocusEngineExe" />
+      <ComponentRef Id="CmpAstroFocusCameraHostExe" />
+      <ComponentRef Id="CmpAstroFocusFocuserHostExe" />
+      <ComponentRef Id="CmpAstroFocusFocuserSetupExe" />
+      <ComponentRef Id="CmpAstroFocusUpdaterExe" />
+      <ComponentRef Id="CmpAstroFocusUpdaterScript" />
+      <ComponentRef Id="CmpAstroFocusSetupExe" />
+      <ComponentRef Id="CmpAstroFocusSetupScript" />
+      <ComponentRef Id="CmpUpdatePublicKey" />
+      <ComponentRef Id="CmpReleaseManifest" />
+      <ComponentRef Id="CmpReadmeDe" />
+      <ComponentRef Id="CmpKnownLimitations" />
+      <?ifdef DevelopmentBuild ?>
+      <ComponentRef Id="CmpUnsignedDevelopmentMarker" />
+      <?endif?>
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+</Wix>

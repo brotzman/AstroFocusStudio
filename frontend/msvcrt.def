@@ -1,0 +1,13 @@
+LIBRARY MSVCRT.dll
+EXPORTS
+memset
+sprintf
+sscanf
+strstr
+strchr
+strlen
+strcmp
+atoi
+atof
+
+memcpy

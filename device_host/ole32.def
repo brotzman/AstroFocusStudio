@@ -1,0 +1,6 @@
+LIBRARY OLE32.dll
+EXPORTS
+CLSIDFromProgID
+CoCreateInstance
+CoInitializeEx
+CoUninitialize

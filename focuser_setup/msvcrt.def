@@ -1,0 +1,8 @@
+LIBRARY MSVCRT.dll
+EXPORTS
+sqrt
+fabs
+sprintf
+sin
+cos
+memmove

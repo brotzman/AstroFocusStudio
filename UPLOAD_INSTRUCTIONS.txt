@@ -1,0 +1,15 @@
+AstroFocus Studio 3.8.8 – GitHub-Upload
+
+1. ZIP vollständig entpacken.
+2. Auf GitHub ein leeres Repository ohne automatisch erzeugte Dateien anlegen.
+3. Den gesamten Inhalt einschließlich des versteckten Ordners .github committen.
+4. Auf den Branch main pushen.
+5. Unter GitHub Actions den Workflow "Build and test Windows installer" abwarten.
+6. Das fertige Paket aus dem Artifact "AstroFocusStudio-3.8.8-Windows-x64" laden.
+
+Ausführliche Anleitung: docs/GITHUB_UPLOAD_DE.md
+
+Hinweis zum GitHub-Webupload:
+Der Workflow startet Shellskripte ausdrücklich über bash. Dadurch funktioniert der
+Sanitizer-Lauf auch dann, wenn der Webupload das Unix-Ausführungsbit nicht bewahrt.
+Für reguläre Weiterentwicklung wird dennoch ein Upload per git commit/push empfohlen.
