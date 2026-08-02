@@ -39,7 +39,12 @@ check("actions/setup-python@v7" in workflow, "Python setup uses the current v7 m
 check("actions/setup-dotnet@v6" in workflow, "dotnet setup uses the current v6 major")
 check("Build-GitHubArtifacts.ps1" in workflow, "workflow runs the complete artifact build")
 check("Test-GitHubInstaller.ps1" in workflow, "workflow runs the installer smoke test")
-check("run: bash ./scripts/Run-NativeTests.sh" in workflow, "workflow invokes native tests through bash without relying on the executable bit")
+check("bash --noprofile --norc ./scripts/Run-NativeTests.sh" in workflow, "workflow invokes native tests through bash without relying on the executable bit")
+check("Prepare sanitizer toolchain" in workflow, "workflow resolves a versioned native-test compiler before execution")
+check("/usr/bin/clang++-18" in workflow, "workflow prefers the runner's fixed Clang 18 path")
+check("CXX=$compiler" in workflow, "resolved compiler is exported explicitly to the native test script")
+check("native-sanitizers.log" in workflow, "native sanitizer output is persisted as a diagnostic log")
+check("Native-Sanitizer-Logs" in workflow and "if: always()" in workflow, "native logs are uploaded even after a failed test")
 check("run: ./scripts/Run-NativeTests.sh" not in workflow, "workflow has no direct executable-bit-dependent native test invocation")
 gitattributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
 check("*.sh text eol=lf" in gitattributes, "shell scripts are checked out with LF line endings")
@@ -56,6 +61,12 @@ for source in (
     "tests/actual_backend_validation_388.cpp",
 ):
     check(source in (ROOT / "scripts" / "Run-NativeTests.sh").read_text(encoding="utf-8"), f"native test is included: {source}")
+
+native_script = (ROOT / "scripts" / "Run-NativeTests.sh").read_text(encoding="utf-8")
+check("-static-libsan" in native_script, "Clang sanitizer runtimes are embedded to prevent loader exit 127")
+check('command -v "$CXX"' in native_script, "native script validates the selected compiler explicitly")
+check("binary diagnostics" in native_script and 'ldd "$binary"' in native_script, "native script records loader diagnostics on test failure")
+check('chmod u+x "$binary"' in native_script, "freshly linked test programs are made executable defensively")
 
 try:
     ET.parse(ROOT / "installer" / "wix" / "Package.wxs")

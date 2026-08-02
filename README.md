@@ -75,3 +75,9 @@ ToupTek-Geräten.
 
 Für dieses Quellpaket wurde keine Lizenzdatei bereitgestellt. Vor einer öffentlichen
 Veröffentlichung sollte der Rechteinhaber eine passende `LICENSE` ergänzen.
+
+### GitHub Actions: native sanitizer diagnostics
+
+The native test job selects a versioned Clang compiler explicitly and embeds the
+sanitizer runtimes. Its logs are uploaded on every success or failure as
+`AstroFocusStudio-3.8.8-Native-Sanitizer-Logs`.
