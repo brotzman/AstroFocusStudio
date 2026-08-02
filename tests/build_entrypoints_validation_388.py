@@ -44,6 +44,37 @@ checks = {
         for script in (root / "device_host" / "build-windows-x64.bat", root / "tools" / "build-windows-x64.bat")
         for line in script.read_text(encoding="utf-8").splitlines()
     ),
+    "tool launchers use dedicated wrapper translation units": all(
+        (root / "tools" / name).is_file() for name in ("updater_launcher.cpp", "setup_launcher.cpp")
+    ),
+    "updater wrapper provides fixed launcher metadata": all(
+        token in (root / "tools" / "updater_launcher.cpp").read_text(encoding="utf-8")
+        for token in (
+            '#define ASTROFOCUS_SCRIPT_NAME L"AstroFocusUpdater.ps1"',
+            '#define ASTROFOCUS_TOOL_TITLE L"AstroFocus Studio Updater"',
+            '#include "tool_launcher.cpp"',
+        )
+    ),
+    "setup wrapper provides fixed launcher metadata and development switch": all(
+        token in (root / "tools" / "setup_launcher.cpp").read_text(encoding="utf-8")
+        for token in (
+            '#define ASTROFOCUS_SCRIPT_NAME L"AstroFocusSetup.ps1"',
+            '#define ASTROFOCUS_TOOL_TITLE L"AstroFocus Studio Setup"',
+            '#define ASTROFOCUS_AUTO_DEV_SWITCH',
+            '#include "tool_launcher.cpp"',
+        )
+    ),
+    "Windows tool build compiles one wrapper source per Fo output": all(
+        token in (root / "tools" / "build-windows-x64.bat").read_text(encoding="utf-8")
+        for token in (
+            '/c updater_launcher.cpp /Fo:updater_launcher.obj',
+            '/c setup_launcher.cpp /Fo:setup_launcher.obj',
+        )
+    ),
+    "tool build scripts contain no space-bearing launcher macros on command line": all(
+        '/DASTROFOCUS_TOOL_TITLE=' not in (root / "tools" / script).read_text(encoding="utf-8")
+        for script in ("build-windows-x64.bat", "build-windows-x64.sh")
+    ),
     "source tree contains no Python cache remnants": not any(root.rglob("*.pyc")) and not any(root.rglob("__pycache__")),
 }
 
