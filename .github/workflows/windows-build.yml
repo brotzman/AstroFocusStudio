@@ -1,0 +1,144 @@
+name: Build and test Windows installer
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astrofocus-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PRODUCT_VERSION: '3.8.8'
+  BUNDLE_VERSION: '3.8.8.0'
+  WIX_VERSION: '5.0.2'
+
+jobs:
+  native-tests:
+    name: Native sanitizer tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Show compiler version
+        run: clang++ --version
+
+      - name: Run ASan and UBSan tests
+        shell: bash
+        run: bash ./scripts/Run-NativeTests.sh
+
+  windows-build:
+    name: Build, package and install on Windows
+    needs: native-tests
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Set up .NET SDK for WiX
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Validate PowerShell syntax
+        shell: powershell
+        run: |
+          $failed = $false
+          Get-ChildItem -Path . -Filter *.ps1 -File -Recurse | ForEach-Object {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors)
+            foreach ($error in $errors) {
+              Write-Error "$($_.FullName): $($error.Message)"
+              $failed = $true
+            }
+          }
+          if ($failed) { throw 'PowerShell syntax validation failed.' }
+
+      - name: Prepare CI diagnostics
+        shell: powershell
+        run: New-Item -ItemType Directory -Force -Path artifacts/test-logs | Out-Null
+
+      - name: Build all binaries and WiX packages
+        shell: powershell
+        run: |
+          $log = Join-Path $PWD 'artifacts\test-logs\build-package.log'
+          try {
+            & .\scripts\Build-GitHubArtifacts.ps1 `
+              -ProductVersion $env:PRODUCT_VERSION `
+              -BundleVersion $env:BUNDLE_VERSION `
+              -WixVersion $env:WIX_VERSION *>&1 | Tee-Object -FilePath $log
+            if (-not $?) { throw 'Build-GitHubArtifacts.ps1 returned a failing PowerShell status.' }
+          } catch {
+            $_ | Format-List * -Force | Out-String | Tee-Object -FilePath $log -Append | Write-Host
+            throw
+          }
+
+      - name: Install, repair and uninstall setup packages
+        shell: powershell
+        run: .\scripts\Test-GitHubInstaller.ps1 -ProductVersion $env:PRODUCT_VERSION
+
+      - name: Upload Windows release files
+        uses: actions/upload-artifact@v7
+        with:
+          name: AstroFocusStudio-${{ env.PRODUCT_VERSION }}-Windows-x64
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Upload installer test logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: AstroFocusStudio-${{ env.PRODUCT_VERSION }}-Installer-Logs
+          path: artifacts/test-logs/
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish tagged release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: windows-build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified Windows release files
+        uses: actions/download-artifact@v8
+        with:
+          name: AstroFocusStudio-${{ env.PRODUCT_VERSION }}-Windows-x64
+          path: release-files
+
+      - name: Verify release checksums
+        working-directory: release-files
+        run: sha256sum --check SHA256SUMS.txt
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release-files/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" release-files/* \
+              --title "AstroFocus Studio $GITHUB_REF_NAME" \
+              --generate-notes
+          fi
