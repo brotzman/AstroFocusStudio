@@ -28,3 +28,8 @@ POWERSHELL-5.1-PARAMETERBINDUNG (2. AUGUST 2026)
 - Der Skriptordner und der Standard-Payloadpfad werden erst nach der Parameterbindung bestimmt.
 - Dadurch startet das Setup unter Windows PowerShell 5.1, bevor Fehlerprotokollierung und UAC-Logik benötigt werden.
 - Derselbe fehleranfällige Standardwert wurde im optionalen WiX-Buildskript entfernt.
+
+WINDOW-/TASKLEISTENKORREKTUR (2. AUGUST 2026)
+- Das Hauptfenster wird beim Minimieren nicht mehr versteckt oder in den Infobereich verschoben.
+- Es bleibt als normale Windows-Schaltfläche in der Taskleiste sichtbar und kann von dort wiederhergestellt oder maximiert werden.
+- Die nicht mehr benötigte Tray-Icon-Implementierung wurde aus dem Frontend entfernt.

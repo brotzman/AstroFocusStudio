@@ -93,3 +93,9 @@ engine as three independent health checks. Burn and raw MSI transactions run in 
 separate jobs on fresh Windows runners, so Burn registration, pending restart state,
 or Windows Installer transaction state cannot leak into the raw MSI test. See
 `docs/GITHUB_ACTIONS_MSI_RUNNER_ISOLATION_FIX_DE.md` for the detailed German note.
+
+### Standard main-window behaviour
+
+- When minimized, AstroFocus Studio remains visible as a normal Windows taskbar button.
+- The main window is no longer hidden or moved to the notification area and can be restored or maximized normally from the taskbar.
+

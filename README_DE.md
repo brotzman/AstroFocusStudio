@@ -17,6 +17,11 @@ AstroFocus Studio ist eine native Windows-x64-Anwendung für Live-Fokus, statist
 - Kamera- und Fokussiererhosts lesen `--pipe` und `--health-check` als exakte Kommandozeilentoken. Teiltreffer, fehlende Werte, offene Anführungszeichen und abgeschnittene Pipe-Namen werden verworfen.
 - Die zuvor korrigierte 24-Byte-Windows-x64-`VARIANT`-ABI im Fokussierer-Setup-Helfer bleibt durch Compiler- und Laufzeittests abgesichert.
 
+### Standardverhalten des Hauptfensters
+
+- Beim Minimieren bleibt AstroFocus Studio als normale Schaltfläche in der Windows-Taskleiste sichtbar.
+- Das Hauptfenster wird nicht mehr verborgen oder in den Infobereich verschoben und lässt sich über die Taskleiste normal wiederherstellen und maximieren.
+
 ### Installer und Updater
 
 - Eine fehlende oder beschädigte installierte `release-manifest.json` wird nicht mehr als gebündelte Programmversion ausgegeben. Der Updater markiert den Zustand als unbekannt und fordert Reparatur oder Rollback.
