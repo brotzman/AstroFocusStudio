@@ -29,12 +29,54 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v7
 
-      - name: Show compiler version
-        run: clang++ --version
+      - name: Prepare sanitizer toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f ./scripts/Run-NativeTests.sh
+          sed -i 's/\r$//' ./scripts/Run-NativeTests.sh
+          mkdir -p artifacts/native-test-logs
+
+          compiler=''
+          for candidate in /usr/bin/clang++-18 /usr/bin/clang++-17 /usr/bin/clang++-16; do
+            if [[ -x "$candidate" ]]; then
+              compiler="$candidate"
+              break
+            fi
+          done
+          if [[ -z "$compiler" ]]; then
+            candidate="$(command -v clang++ || true)"
+            if [[ -n "$candidate" && -x "$candidate" ]]; then
+              compiler="$candidate"
+            fi
+          fi
+          if [[ -z "$compiler" ]]; then
+            echo 'No usable Clang C++ compiler was found on the runner.' | tee artifacts/native-test-logs/toolchain.log
+            exit 2
+          fi
+
+          echo "CXX=$compiler" >> "$GITHUB_ENV"
+          {
+            echo "Selected compiler: $compiler"
+            "$compiler" --version
+            bash --version | head -n 1
+            uname -a
+          } | tee artifacts/native-test-logs/toolchain.log
 
       - name: Run ASan and UBSan tests
         shell: bash
-        run: bash ./scripts/Run-NativeTests.sh
+        run: |
+          set -o pipefail
+          bash --noprofile --norc ./scripts/Run-NativeTests.sh 2>&1 | tee artifacts/native-test-logs/native-sanitizers.log
+
+      - name: Upload native sanitizer logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: AstroFocusStudio-${{ env.PRODUCT_VERSION }}-Native-Sanitizer-Logs
+          path: artifacts/native-test-logs/
+          if-no-files-found: error
+          retention-days: 14
 
   windows-build:
     name: Build, package and install on Windows
