@@ -58,6 +58,7 @@ typedef unsigned long long SIZE_T;
 typedef unsigned short COLOR16;
 typedef void* FARPROC;
 
+
 typedef struct _SECURITY_ATTRIBUTES SECURITY_ATTRIBUTES;
 
 #ifdef _MSC_VER
@@ -70,6 +71,14 @@ typedef struct _SECURITY_ATTRIBUTES SECURITY_ATTRIBUTES;
 #define NULL 0
 #define TRUE 1
 #define FALSE 0
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
+#endif
+#include "../common/command_line_args.inc"
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 #define S_OK ((HRESULT)0)
 #define SUCCEEDED(hr) ((HRESULT)(hr) >= 0)
 #define FAILED(hr) ((HRESULT)(hr) < 0)
@@ -3196,23 +3205,18 @@ static LRESULT CALLBACK WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam){
     if(msg==WM_DESTROY){KillTimer(hwnd,TIMER_MAIN);DisconnectCamera();DisconnectFocuser();if(g_deviceHostJob){CloseHandle(g_deviceHostJob);g_deviceHostJob=0;}FreeImage();if(g_font)DeleteObject(g_font);if(g_smallFont)DeleteObject(g_smallFont);if(g_titleFont)DeleteObject(g_titleFont);if(g_monoFont)DeleteObject(g_monoFont);if(g_brushWindow)DeleteObject(g_brushWindow);if(g_brushPanel)DeleteObject(g_brushPanel);if(g_brushBlack)DeleteObject(g_brushBlack);if(g_brushPlot)DeleteObject(g_brushPlot);if(g_penGrid)DeleteObject(g_penGrid);if(g_penCurve)DeleteObject(g_penCurve);if(g_penPoint)DeleteObject(g_penPoint);if(g_penGood)DeleteObject(g_penGood);if(g_penBad)DeleteObject(g_penBad);if(g_penBest)DeleteObject(g_penBest);PostQuitMessage(0);return 0;}
     return DefWindowProcW(hwnd,msg,wParam,lParam);
 }
-static BOOL CommandLineContains(LPCWSTR token){LPCWSTR c=GetCommandLineW();if(!c||!token)return FALSE;int tn=WLen(token);for(int i=0;c[i];i++){int j=0;while(j<tn&&c[i+j]==token[j])j++;if(j==tn)return TRUE;}return FALSE;}
-static BOOL RunHostHealthCheck(LPCWSTR hostPath){
-    if(!hostPath||GetFileAttributesW(hostPath)==INVALID_FILE_ATTRIBUTES||!LoadDeviceHostProcessApi())return FALSE;
-    wchar_t command[1200];wsprintfW(command,L"\"%s\" --health-check",hostPath);STARTUPINFOW_MIN si;PROCESS_INFORMATION_MIN pi;memset(&si,0,sizeof(si));memset(&pi,0,sizeof(pi));si.cb=sizeof(si);
-    if(!pCreateProcessWMin(hostPath,command,0,0,FALSE,CREATE_NO_WINDOW,0,g_appDir,&si,&pi))return FALSE;
-    CloseHandle(pi.hThread);DWORD wait=WaitForSingleObject(pi.hProcess,5000);DWORD code=STILL_ACTIVE;BOOL ok=wait==WAIT_OBJECT_0&&pGetExitCodeProcessMin(pi.hProcess,&code)&&code==0;
-    if(!ok&&wait==WAIT_TIMEOUT){pTerminateProcessMin(pi.hProcess,0xAF20);WaitForSingleObject(pi.hProcess,1000);}
-    CloseHandle(pi.hProcess);
-    return ok;
-}
-static BOOL RunEngineHealthCheck(){
-    wchar_t path[1024];BuildDataPath(L"HealthCheck.tmp",path,1024);HANDLE h=CreateFileW(path,GENERIC_WRITE,FILE_SHARE_READ,0,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,0);if(h==INVALID_HANDLE_VALUE)return FALSE;const char marker[]="AstroFocus Studio 3.8.8 health check\r\n";DWORD wrote=0;BOOL ok=WriteFile(h,marker,(DWORD)(sizeof(marker)-1),&wrote,0)&&wrote==(DWORD)(sizeof(marker)-1);CloseHandle(h);DeleteFileW(path);
+static UINT RunEngineHealthCheck(){
+    if(!g_appDir[0]||!g_dataDir[0])return 21;
     wchar_t cameraHost[1024],focuserHost[1024];lstrcpyW(cameraHost,g_appDir);lstrcatW(cameraHost,L"AstroFocusCameraHost.exe");lstrcpyW(focuserHost,g_appDir);lstrcatW(focuserHost,L"AstroFocusFocuserHost.exe");
-    return ok&&RunHostHealthCheck(cameraHost)&&RunHostHealthCheck(focuserHost);
+    DWORD cameraAttributes=GetFileAttributesW(cameraHost);if(cameraAttributes==INVALID_FILE_ATTRIBUTES||(cameraAttributes&FILE_ATTRIBUTE_DIRECTORY))return 22;
+    DWORD focuserAttributes=GetFileAttributesW(focuserHost);if(focuserAttributes==INVALID_FILE_ATTRIBUTES||(focuserAttributes&FILE_ATTRIBUTE_DIRECTORY))return 23;
+    wchar_t path[1024];wsprintfW(path,L"%sHealthCheck-%u.tmp",g_dataDir,(DWORD)GetTickCount64());
+    HANDLE h=CreateFileW(path,GENERIC_WRITE,FILE_SHARE_READ,0,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,0);if(h==INVALID_HANDLE_VALUE)return 24;
+    const char marker[]="AstroFocus Studio 3.8.8 engine health check\r\n";DWORD wrote=0;BOOL ok=WriteFile(h,marker,(DWORD)(sizeof(marker)-1),&wrote,0)&&wrote==(DWORD)(sizeof(marker)-1);CloseHandle(h);DeleteFileW(path);
+    return ok?0:25;
 }
 extern "C" void WinMainCRTStartup(){__security_init_cookie();
-    g_instance=(HINSTANCE)GetModuleHandleW(0);BuildIniPath();if(CommandLineContains(L"--health-check"))ExitProcess(RunEngineHealthCheck()?0:20);InstallBackendCrashHandler();g_sessionStartTick=GetTickCount64();SetRuntimeOperation("engine startup");ClearAutofocusError();lstrcpyW(g_lastAutoRefocusReason,L"deaktiviert");HRESULT hr=CoInitializeEx(0,COINIT_APARTMENTTHREADED);if(FAILED(hr))ExitProcess(1);
+    g_instance=(HINSTANCE)GetModuleHandleW(0);BuildIniPath();int healthCheckCount=AfCommandLineArgumentCount(GetCommandLineW(),L"--health-check");if(healthCheckCount<0||healthCheckCount>1)ExitProcess(2);if(healthCheckCount==1)ExitProcess(RunEngineHealthCheck());InstallBackendCrashHandler();g_sessionStartTick=GetTickCount64();SetRuntimeOperation("engine startup");ClearAutofocusError();lstrcpyW(g_lastAutoRefocusReason,L"deaktiviert");HRESULT hr=CoInitializeEx(0,COINIT_APARTMENTTHREADED);if(FAILED(hr))ExitProcess(1);
     g_font=CreateFontW(-16,0,0,0,FW_NORMAL,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH|FF_DONTCARE,L"Segoe UI");g_smallFont=CreateFontW(-14,0,0,0,FW_NORMAL,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH|FF_DONTCARE,L"Segoe UI");g_titleFont=CreateFontW(-21,0,0,0,FW_SEMIBOLD,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH|FF_DONTCARE,L"Segoe UI");g_monoFont=CreateFontW(-17,0,0,0,FW_SEMIBOLD,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH|FF_DONTCARE,L"Consolas");
     g_brushWindow=CreateSolidBrush(RGB(10,15,22));g_brushPanel=CreateSolidBrush(RGB(24,34,46));g_brushBlack=CreateSolidBrush(RGB(0,0,0));g_brushPlot=CreateSolidBrush(RGB(17,25,35));g_penGrid=CreatePen(PS_SOLID,1,RGB(49,64,82));g_penCurve=CreatePen(PS_SOLID,2,RGB(54,132,255));g_penPoint=CreatePen(PS_SOLID,2,RGB(245,195,80));g_penGood=CreatePen(PS_SOLID,1,RGB(90,230,145));g_penBad=CreatePen(PS_SOLID,2,RGB(255,85,85));g_penBest=CreatePen(PS_SOLID,1,RGB(245,105,210));
     LoadApplicationIcons();WNDCLASSEXW wc;memset(&wc,0,sizeof(wc));wc.cbSize=sizeof(wc);wc.style=CS_HREDRAW|CS_VREDRAW;wc.lpfnWndProc=WndProc;wc.hInstance=g_instance;wc.hCursor=LoadCursorW(0,IDC_ARROW);wc.hIcon=g_appIcon;wc.hIconSm=g_appIconSmall;wc.hbrBackground=g_brushWindow;wc.lpszClassName=L"AstroFocusEngineWindow";if(!RegisterClassExW(&wc)){CoUninitialize();ExitProcess(2);}

@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [ValidateSet('Install','Repair','Uninstall','Rollback','Health')]
     [string]$Mode = 'Install',
@@ -257,9 +257,15 @@ function Invoke-HealthCheck([string]$Root) {
     try {
         foreach ($file in $RequiredFiles) { if (-not (Test-Path -LiteralPath (Join-Path $Root $file) -PathType Leaf)) { return $false } }
         $null = Test-ManifestAndFiles $Root
-        $engine = Join-Path $Root 'AstroFocusEngine.exe'
-        $p = Start-Process -FilePath $engine -ArgumentList '--health-check' -Wait -PassThru -WindowStyle Hidden
-        return $p.ExitCode -eq 0
+        foreach ($name in @('AstroFocusCameraHost.exe','AstroFocusFocuserHost.exe','AstroFocusEngine.exe')) {
+            $program = Join-Path $Root $name
+            $p = Start-Process -FilePath $program -ArgumentList '--health-check' -Wait -PassThru -WindowStyle Hidden
+            if ($p.ExitCode -ne 0) {
+                Write-InstallLog "Health-Check $name fehlgeschlagen: Exitcode $($p.ExitCode)."
+                return $false
+            }
+        }
+        return $true
     } catch { Write-InstallLog "Health-Check fehlgeschlagen: $($_.Exception.Message)"; return $false }
 }
 function Save-State([string]$InstalledVersion,[string]$BackupPath) {

@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProductVersion = '3.8.8'
 )
@@ -125,16 +125,76 @@ function Assert-Uninstalled {
 }
 
 function Invoke-HealthCheck {
-    $engine = Join-Path $InstallRoot 'AstroFocusEngine.exe'
-    $cameraHost = Join-Path $InstallRoot 'AstroFocusCameraHost.exe'
-    $focuserHost = Join-Path $InstallRoot 'AstroFocusFocuserHost.exe'
-    foreach ($program in @($engine, $cameraHost, $focuserHost)) {
+    # Test the two device hosts directly before the engine. The engine health check is
+    # intentionally a self-check and no longer starts nested host processes. This makes
+    # every failing component visible through its own executable name and exit code.
+    $programs = @(
+        (Join-Path $InstallRoot 'AstroFocusCameraHost.exe'),
+        (Join-Path $InstallRoot 'AstroFocusFocuserHost.exe'),
+        (Join-Path $InstallRoot 'AstroFocusEngine.exe')
+    )
+    foreach ($program in $programs) {
         Invoke-InstallerProcess `
             -FilePath $program `
             -Arguments @('--health-check') `
             -Description "Health-Check $([IO.Path]::GetFileName($program))" `
             -SuccessExitCodes @(0) `
             -TimeoutSeconds 30
+    }
+}
+
+function Stop-AstroFocusProcesses {
+    $names = @(
+        'AstroFocusStudio',
+        'AstroFocusEngine',
+        'AstroFocusCameraHost',
+        'AstroFocusFocuserHost',
+        'AstroFocusFocuserSetup',
+        'AstroFocusUpdater',
+        'AstroFocusSetup'
+    )
+    foreach ($name in $names) {
+        $processes = @(Get-Process -Name $name -ErrorAction SilentlyContinue)
+        foreach ($process in $processes) {
+            Write-SmokeLog "CLEANUP: stopping $($process.ProcessName) PID $($process.Id)"
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+function Invoke-CleanupUninstall {
+    if (-not (Test-Path -LiteralPath $InstallRoot)) { return }
+    Stop-AstroFocusProcesses
+    Start-Sleep -Seconds 2
+
+    # A product installed through Burn must first be removed through the same bundle.
+    # Calling the embedded MSI directly while the bundle owns the registration can block
+    # on the Windows Installer transaction mutex. Raw MSI removal is only a fallback.
+    try {
+        Invoke-InstallerProcess `
+            -FilePath $BundlePath `
+            -Arguments @('/uninstall', '/quiet', '/norestart', '/log', (Join-Path $LogRoot 'cleanup-bundle-uninstall.log')) `
+            -Description 'Bereinigungs-Bundle-Deinstallation' `
+            -SuccessExitCodes @(0, 1605, 1614, 1641, 3010) `
+            -TimeoutSeconds 90
+    } catch {
+        Write-Warning $_
+        Write-SmokeLog "WARN: bundle cleanup failed: $($_.Exception.Message)"
+    }
+
+    Start-Sleep -Seconds 2
+    if (Test-Path -LiteralPath $InstallRoot) {
+        try {
+            Invoke-InstallerProcess `
+                -FilePath 'msiexec.exe' `
+                -Arguments @('/x', $MsiPath, '/qn', '/norestart', '/l*v', (Join-Path $LogRoot 'cleanup-msi-uninstall.log')) `
+                -Description 'Bereinigungs-MSI-Fallback' `
+                -SuccessExitCodes @(0, 1605, 1614, 1641, 3010) `
+                -TimeoutSeconds 60
+        } catch {
+            Write-Warning $_
+            Write-SmokeLog "WARN: MSI fallback cleanup failed: $($_.Exception.Message)"
+        }
     }
 }
 
@@ -177,14 +237,7 @@ try {
     Invoke-InstallerProcess -FilePath 'msiexec.exe' -Arguments @('/x', $MsiPath, '/qn', '/norestart', '/l*v', $msiUninstallLog) -Description 'MSI-Deinstallation' -TimeoutSeconds 180
     Assert-Uninstalled
 } finally {
-    if (Test-Path -LiteralPath $InstallRoot) {
-        try {
-            Invoke-InstallerProcess -FilePath 'msiexec.exe' -Arguments @('/x', $MsiPath, '/qn', '/norestart', '/l*v', (Join-Path $LogRoot 'cleanup-uninstall.log')) -Description 'Bereinigungs-Deinstallation' -SuccessExitCodes @(0, 1605, 1614, 1641, 3010) -TimeoutSeconds 120
-        } catch {
-            Write-Warning $_
-            Write-SmokeLog "WARN: cleanup failed: $($_.Exception.Message)"
-        }
-    }
+    Invoke-CleanupUninstall
 }
 
 Write-SmokeLog 'PASS: Bundle and MSI install, repair, health checks and uninstall'

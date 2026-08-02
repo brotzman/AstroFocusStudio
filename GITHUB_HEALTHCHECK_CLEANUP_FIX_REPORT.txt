@@ -1,0 +1,57 @@
+AstroFocus Studio 3.8.8
+GitHub Actions health-check and cleanup fix report
+Date: 2026-08-02
+
+Observed Windows-runner result
+------------------------------
+- Burn bundle installation: exit code 0
+- Installed payload and SHA-256 verification: passed
+- AstroFocusEngine.exe --health-check: exit code 20
+- Emergency cleanup through direct MSI uninstall: timed out after 120 seconds
+
+Confirmed design faults
+-----------------------
+1. The engine health check launched both device-host executables as nested child
+   processes and collapsed all file, process, timeout, and host errors into the
+   single exit code 20.
+2. The installer smoke test stopped at the engine before running the device hosts
+   as independent checks, so the failing component was hidden.
+3. Failed-run cleanup attempted to remove a Burn-installed product directly through
+   the embedded MSI. That is not the correct primary ownership path and can block
+   on an active bundle/MSI transaction.
+
+Corrections
+-----------
+- Camera host, focuser host, and engine are checked independently by CI.
+- The engine health check is now a non-nested self-check.
+- Engine command-line parsing now rejects malformed or duplicate --health-check
+  switches and does not accept substring matches.
+- Engine health-check diagnostic exit codes:
+    21 path initialization failed
+    22 camera host missing
+    23 focuser host missing
+    24 user-data test file could not be created
+    25 user-data test file could not be fully written
+- Failed-run cleanup first uses the same Burn bundle with /uninstall.
+- Direct MSI cleanup is retained only as a 60-second fallback.
+- Known AstroFocus processes are stopped before cleanup.
+- The development PowerShell installer also checks the two hosts and the engine
+  separately and logs the exact executable and exit code.
+
+Verification performed in the available build environment
+----------------------------------------------------------
+- Strict Windows-x64 cross-build: passed
+- Generated PE32+ x64 programs: 7/7
+- Reproducible second build: 7/7 binaries byte-identical
+- Native ASan/UBSan checks: 257/257 passed
+- Python build/workflow/security/package checks: 183/183 passed
+- Total automated assertions: 440/440 passed
+- Source archive contains no EXE, OBJ, PYC, MSI, PDB, cache, backup, or temporary
+  build remnants.
+
+Limitations
+-----------
+The revised Burn/MSI cleanup sequence and the three installed executable health
+checks can only be executed conclusively on the next GitHub Windows runner. The
+available environment can compile and statically/regression-test the changes but
+cannot run the produced Windows installer.

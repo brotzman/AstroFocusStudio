@@ -85,3 +85,12 @@ sanitizer runtimes. Its logs are uploaded on every success or failure as
 ## CI repository integrity
 
 - The Windows workflow validates all required `scripts/` entry points and invokes the artifact build from the absolute `GITHUB_WORKSPACE` path.
+
+## CI health checks and failed-run cleanup
+
+The Windows installer smoke test now executes the camera host, focuser host, and
+engine as three independent health checks. The engine no longer starts nested host
+processes during its own self-check. If a bundle-installed test run fails, cleanup
+first uninstalls through the Burn bundle; direct MSI removal is a bounded fallback
+only. See `docs/GITHUB_ACTIONS_HEALTHCHECK_CLEANUP_FIX_DE.md` for the detailed
+German diagnostic note.

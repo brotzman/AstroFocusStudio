@@ -70,3 +70,12 @@ Der vorbereitete Workflow liegt unter `.github/workflows/windows-build.yml`. Er 
 die sieben Programme auf `windows-2022`, erzeugt mit WiX ein MSI und ein Burn-Setup
 und führt einen echten stillen Installations-, Reparatur- und Deinstallationstest aus.
 Die Upload-Anleitung steht in `docs/GITHUB_UPLOAD_DE.md`.
+
+### CI-Health-Checks und Fehlerbereinigung
+
+Die GitHub-Prüfung startet Kamera-Host, Fokussierer-Host und Engine jetzt als drei
+getrennte Health-Checks. Die Engine startet dabei keine verschachtelten Hostprozesse
+mehr. Bei einem fehlgeschlagenen Test wird eine Bundle-Installation zuerst über das
+Burn-Bundle entfernt; eine direkte MSI-Deinstallation dient nur noch als begrenzter
+Fallback. Details stehen in
+`docs/GITHUB_ACTIONS_HEALTHCHECK_CLEANUP_FIX_DE.md`.
