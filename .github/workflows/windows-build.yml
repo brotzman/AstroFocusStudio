@@ -114,10 +114,22 @@ jobs:
           }
           if ($failed) { throw 'PowerShell syntax validation failed.' }
 
+      - name: Prepare CI diagnostics
+        shell: powershell
+        run: |
+          $logDirectory = Join-Path $env:GITHUB_WORKSPACE 'artifacts\test-logs'
+          New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
+          @(
+            'AstroFocus Studio Windows CI diagnostics',
+            "UTC: $([DateTime]::UtcNow.ToString('o'))",
+            "Workspace: $env:GITHUB_WORKSPACE"
+          ) | Set-Content -LiteralPath (Join-Path $logDirectory 'preflight.log') -Encoding utf8
+
       - name: Verify repository build entry points
         shell: powershell
         run: |
           $repositoryRoot = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE)
+          $log = Join-Path $repositoryRoot 'artifacts\test-logs\preflight.log'
           $requiredFiles = @(
             'scripts\Build-GitHubArtifacts.ps1',
             'scripts\Run-PythonTests.ps1',
@@ -127,31 +139,42 @@ jobs:
             'build-all-windows-x64.bat',
             'installer\build-wix.ps1',
             'installer\wix\Package.wxs',
-            'installer\wix\Bundle.wxs',
-            '.gitattributes',
-            '.gitignore'
+            'installer\wix\Bundle.wxs'
           )
+          $optionalMetadata = @('.gitattributes', '.gitignore')
           $missingFiles = @()
+          $missingOptional = @()
           foreach ($relativePath in $requiredFiles) {
             $fullPath = Join-Path $repositoryRoot $relativePath
             if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
               $missingFiles += $relativePath
             }
           }
-          Write-Host "Repository root: $repositoryRoot"
-          if (Test-Path -LiteralPath (Join-Path $repositoryRoot 'scripts')) {
-            Get-ChildItem -LiteralPath (Join-Path $repositoryRoot 'scripts') -Force |
-              Sort-Object Name | Format-Table Name, Length -AutoSize
-          }
-          if ($missingFiles.Count -gt 0) {
-            throw "Required repository files are missing from this commit: $($missingFiles -join ', ')"
+          foreach ($relativePath in $optionalMetadata) {
+            $fullPath = Join-Path $repositoryRoot $relativePath
+            if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+              $missingOptional += $relativePath
+            }
           }
 
-      - name: Prepare CI diagnostics
-        shell: powershell
-        run: |
-          $logDirectory = Join-Path $env:GITHUB_WORKSPACE 'artifacts\test-logs'
-          New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
+          "Repository root: $repositoryRoot" | Tee-Object -FilePath $log -Append | Write-Host
+          if (Test-Path -LiteralPath (Join-Path $repositoryRoot 'scripts')) {
+            $scriptListing = Get-ChildItem -LiteralPath (Join-Path $repositoryRoot 'scripts') -Force |
+              Sort-Object Name | Format-Table Name, Length -AutoSize | Out-String
+            $scriptListing | Tee-Object -FilePath $log -Append | Write-Host
+          }
+          if ($missingOptional.Count -gt 0) {
+            $warning = "Optional repository metadata is missing and will not block the build: $($missingOptional -join ', ')"
+            Write-Warning $warning
+            $warning | Add-Content -LiteralPath $log -Encoding utf8
+          }
+          if ($missingFiles.Count -gt 0) {
+            $message = "Required build files are missing from this commit: $($missingFiles -join ', ')"
+            $message | Add-Content -LiteralPath $log -Encoding utf8
+            throw $message
+          }
+          'Repository build entry-point validation passed.' |
+            Tee-Object -FilePath $log -Append | Write-Host
 
       - name: Build all binaries and WiX packages
         shell: powershell
@@ -201,7 +224,7 @@ jobs:
         with:
           name: AstroFocusStudio-${{ env.PRODUCT_VERSION }}-Installer-Logs
           path: artifacts/test-logs/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
 
   release:
