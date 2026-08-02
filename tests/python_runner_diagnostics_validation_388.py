@@ -19,13 +19,17 @@ checks = [
     ("python-tests.log" in runner and "python-tests.log" in builder, "complete Python log is preserved under CI diagnostics"),
     ("installer\\wix\\Package.wxs" in workflow, "preflight requires Package.wxs"),
     ("installer\\wix\\Bundle.wxs" in workflow, "preflight requires Bundle.wxs"),
+    ("KNOWN_LIMITATIONS_3_8_8.txt" in required_block, "preflight requires the current known-limitations payload"),
+    ("UNSIGNED_DEVELOPMENT_BUILD.txt" in required_block, "preflight requires the unsigned-development marker"),
+    ("updater\\update-public-key.cer" in required_block, "preflight requires the updater public key"),
+    ("Assert-PackagingInputs" in builder, "local artifact builds validate payload inputs before compilation"),
     (".gitattributes" not in required_block and ".gitignore" not in required_block, "repository metadata files are not build prerequisites"),
     ("$optionalMetadata = @('.gitattributes', '.gitignore')" in workflow, "missing repository metadata is checked separately"),
     ("Optional repository metadata is missing and will not block the build" in workflow, "missing repository metadata only produces a warning"),
     (workflow.index("Prepare CI diagnostics") < workflow.index("Verify repository build entry points"), "preflight diagnostics are initialized before validation"),
     ("preflight.log" in workflow, "preflight output is persisted for failed runs"),
     ("if-no-files-found: warn" in workflow, "log upload does not mask the primary failure"),
-    ("required GitHub/WiX files are missing" in validator, "validator reports missing build inputs without a traceback"),
+    ("required GitHub/WiX or payload source files are missing" in validator, "validator reports missing build and payload inputs without a traceback"),
     ("utf-8-sig" in validator, "validator accepts normal UTF-8 and UTF-8 BOM files"),
 ]
 

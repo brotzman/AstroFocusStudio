@@ -1,15 +1,13 @@
-AstroFocus Studio 3.8.8 – GitHub Actions Preflight-Fix
+AstroFocus Studio 3.8.8 – GitHub-Patch für fehlende Payload-Quelldateien
 
-Ursache:
-- .gitattributes und .gitignore wurden fälschlich als zwingende Builddateien behandelt.
-- Das Diagnoseverzeichnis wurde erst nach der Vorabprüfung angelegt.
-- Dadurch scheiterte der Build unnötig und der Log-Upload meldete zusätzlich, dass keine Dateien vorhanden seien.
+1. Dieses ZIP lokal entpacken.
+2. Den gesamten Inhalt in das Hauptverzeichnis des GitHub-Repositories kopieren.
+3. Vorhandene Dateien ersetzen und die Ordnerstruktur beibehalten.
+4. Prüfen, dass KNOWN_LIMITATIONS_3_8_8.txt direkt im Repository-Hauptverzeichnis liegt.
+5. Anschließend ausführen:
 
-Installation des Patches:
-1. ZIP lokal entpacken.
-2. Den Inhalt mit unveränderter Ordnerstruktur in die Wurzel des GitHub-Repositorys kopieren.
-3. Vorhandene Dateien ersetzen.
-4. Committen und pushen.
-5. Den Workflow erneut starten.
+   git add -A
+   git commit -m "Restore installer payload sources and validate them before build"
+   git push
 
-Die beiden Dotfiles sind weiterhin im vollständigen Repository enthalten, fehlen sie aber beim Webupload, wird nur noch eine Warnung ausgegeben.
+Der Patch enthält vorsorglich alle nicht kompilierten Quelldateien, die in das MSI-Payload übernommen werden. Dadurch folgt nicht nach der reparierten Datei sofort der nächste Abbruch wegen einer weiteren fehlenden Payload-Datei.

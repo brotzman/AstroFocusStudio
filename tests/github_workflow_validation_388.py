@@ -32,10 +32,23 @@ required_text_files = {
     "native_script": ROOT / "scripts" / "Run-NativeTests.sh",
 }
 
+required_payload_sources = [
+    ROOT / "installer" / "AstroFocusSetup.ps1",
+    ROOT / "updater" / "AstroFocusUpdater.ps1",
+    ROOT / "updater" / "update-public-key.cer",
+    ROOT / "release" / "New-ReleaseManifest.ps1",
+    ROOT / "README_DE.md",
+    ROOT / "KNOWN_LIMITATIONS_3_8_8.txt",
+    ROOT / "UNSIGNED_DEVELOPMENT_BUILD.txt",
+]
+missing_payload_sources = [
+    str(path.relative_to(ROOT)) for path in required_payload_sources if not path.is_file()
+]
+
 missing = [str(path.relative_to(ROOT)) for path in required_text_files.values() if not path.is_file()]
-if missing:
-    print("FAIL: required GitHub/WiX files are missing from the checked-out commit:")
-    for relative_path in missing:
+if missing or missing_payload_sources:
+    print("FAIL: required GitHub/WiX or payload source files are missing from the checked-out commit:")
+    for relative_path in missing + missing_payload_sources:
         print(f"  - {relative_path}")
     sys.exit(1)
 
@@ -88,6 +101,11 @@ check("path: artifacts/test-logs/" in workflow and "if-no-files-found: warn" in 
 check("python-tests.log" in workflow or "python-tests.log" in artifact_build, "Python test output is persisted as a complete diagnostic log")
 check("Start-Process" in (ROOT / "scripts" / "Run-PythonTests.ps1").read_text(encoding="utf-8-sig"), "Python runner captures stdout and stderr without PowerShell NativeCommandError truncation")
 check("installer\\wix\\Package.wxs" in workflow and "installer\\wix\\Bundle.wxs" in workflow, "checkout preflight verifies both WiX source files")
+check("KNOWN_LIMITATIONS_3_8_8.txt" in workflow, "checkout preflight verifies the current known-limitations payload")
+check("UNSIGNED_DEVELOPMENT_BUILD.txt" in workflow, "checkout preflight verifies the unsigned-development marker")
+check("updater\\update-public-key.cer" in workflow, "checkout preflight verifies the updater public key")
+check("Assert-PackagingInputs" in artifact_build, "artifact build validates packaging inputs before compilation")
+check(artifact_build.index("Assert-PackagingInputs") < artifact_build.index("Initialize-LlvmPath"), "packaging inputs are checked before the compiler toolchain is initialized")
 check("$LogRoot = Join-Path $ArtifactsRoot 'test-logs'" in artifact_build, "artifact build preserves the CI diagnostic directory")
 check("& lld-link.exe --version" in artifact_build, "LLD version probe uses the supported GNU-style long option")
 check("lld-link.exe /version" not in artifact_build, "LLD version probe is not passed to the linker as an input path")

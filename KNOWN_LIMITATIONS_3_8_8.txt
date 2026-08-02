@@ -1,0 +1,8 @@
+AstroFocus Studio 3.8.8 – bekannte Grenzen
+
+- Reale ASCOM-Treiber und ToupTek-Hardware konnten in der Buildumgebung nicht ausgeführt werden.
+- Der Build ist Windows x64. Reine 32-Bit-In-Process-ASCOM-Treiber sind damit nicht kompatibel.
+- Das Entwicklungs-Setup ist nicht öffentlich signiert; der Zertifikat-Fingerabdruck für Produktionsupdates ist noch ein Platzhalter.
+- Der GitHub-Workflow prüft stille WiX/MSI-Installation, Reparatur und Deinstallation auf Windows Server 2022. Interaktive UAC-, SmartScreen-, Registry- und Authenticode-Abläufe müssen zusätzlich auf einem Windows-11-Zielsystem geprüft werden.
+- USB-Abziehen während realer Belichtung oder Motorfahrt, Standby/Fortsetzung und nächtlicher Dauerbetrieb bleiben Hardwaretests.
+- Die lokale Engine-API bindet nur an 127.0.0.1, besitzt aber keine Benutzeranmeldung. Port 8873 darf nicht durch Proxy- oder Portweiterleitungsregeln nach außen veröffentlicht werden.

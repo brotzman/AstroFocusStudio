@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProductVersion = '3.8.8',
     [string]$BundleVersion = '3.8.8.0',
@@ -16,6 +16,36 @@ $PayloadRoot = Join-Path $ArtifactsRoot 'payload'
 $InstallerOutput = Join-Path $ArtifactsRoot 'installer'
 $ToolRoot = Join-Path $ArtifactsRoot 'tools'
 $LogRoot = Join-Path $ArtifactsRoot 'test-logs'
+
+
+$payloadFiles = [ordered]@{
+    'AstroFocusUpdater.ps1'          = 'updater\AstroFocusUpdater.ps1'
+    'AstroFocusSetup.ps1'            = 'installer\AstroFocusSetup.ps1'
+    'update-public-key.cer'           = 'updater\update-public-key.cer'
+    'README_DE.md'                    = 'README_DE.md'
+    'KNOWN_LIMITATIONS_3_8_8.txt'     = 'KNOWN_LIMITATIONS_3_8_8.txt'
+    'UNSIGNED_DEVELOPMENT_BUILD.txt'  = 'UNSIGNED_DEVELOPMENT_BUILD.txt'
+}
+
+$packagingInputs = @(
+    'release\New-ReleaseManifest.ps1',
+    'installer\build-wix.ps1',
+    'installer\wix\Package.wxs',
+    'installer\wix\Bundle.wxs'
+) + @($payloadFiles.Values)
+
+function Assert-PackagingInputs {
+    $missing = @()
+    foreach ($relativePath in $packagingInputs) {
+        $source = Join-Path $RepositoryRoot $relativePath
+        if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+            $missing += $relativePath
+        }
+    }
+    if ($missing.Count -gt 0) {
+        throw "Erforderliche Paketquelldateien fehlen: $($missing -join ', ')"
+    }
+}
 
 function Add-PathEntry([string]$Path) {
     if (-not [string]::IsNullOrWhiteSpace($Path) -and
@@ -80,6 +110,7 @@ function Invoke-Checked([scriptblock]$Command, [string]$FailureMessage) {
     }
 }
 
+Assert-PackagingInputs
 Initialize-LlvmPath
 Remove-GeneratedNativeFiles
 # Keep test-logs across build cleanup so a failing CI step still uploads diagnostics.
@@ -130,14 +161,6 @@ if (-not $SkipPythonTests) {
         -LogPath $pythonLog
 }
 
-$payloadFiles = [ordered]@{
-    'AstroFocusUpdater.ps1'          = 'updater\AstroFocusUpdater.ps1'
-    'AstroFocusSetup.ps1'            = 'installer\AstroFocusSetup.ps1'
-    'update-public-key.cer'           = 'updater\update-public-key.cer'
-    'README_DE.md'                    = 'README_DE.md'
-    'KNOWN_LIMITATIONS_3_8_8.txt'     = 'KNOWN_LIMITATIONS_3_8_8.txt'
-    'UNSIGNED_DEVELOPMENT_BUILD.txt'  = 'UNSIGNED_DEVELOPMENT_BUILD.txt'
-}
 foreach ($entry in $payloadFiles.GetEnumerator()) {
     $source = Join-Path $RepositoryRoot $entry.Value
     if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
