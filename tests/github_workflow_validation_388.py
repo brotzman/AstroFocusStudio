@@ -59,6 +59,8 @@ check("& .\\scripts\\Build-GitHubArtifacts.ps1" not in workflow, "workflow no lo
 check("build-package.log" in workflow and "Tee-Object" in workflow, "Windows build output is persisted even when packaging fails")
 check("path: artifacts/test-logs/" in workflow and "if-no-files-found: error" in workflow, "diagnostic upload always requires a real log artifact")
 check("$LogRoot = Join-Path $ArtifactsRoot 'test-logs'" in artifact_build, "artifact build preserves the CI diagnostic directory")
+check("& lld-link.exe --version" in artifact_build, "LLD version probe uses the supported GNU-style long option")
+check("lld-link.exe /version" not in artifact_build, "LLD version probe is not passed to the linker as an input path")
 
 for source in (
     "tests/command_line_args_validation_388.cpp",

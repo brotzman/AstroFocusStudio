@@ -92,7 +92,7 @@ New-Item -ItemType Directory -Force -Path $ArtifactsRoot, $DistRoot, $PayloadRoo
 Write-Host 'LLVM-Versionen:'
 & clang.exe --version
 & clang-cl.exe --version
-& lld-link.exe /version
+& lld-link.exe --version
 
 Push-Location $RepositoryRoot
 try {
