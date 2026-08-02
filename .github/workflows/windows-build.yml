@@ -139,7 +139,14 @@ jobs:
             'build-all-windows-x64.bat',
             'installer\build-wix.ps1',
             'installer\wix\Package.wxs',
-            'installer\wix\Bundle.wxs'
+            'installer\wix\Bundle.wxs',
+            'installer\AstroFocusSetup.ps1',
+            'updater\AstroFocusUpdater.ps1',
+            'updater\update-public-key.cer',
+            'release\New-ReleaseManifest.ps1',
+            'README_DE.md',
+            'KNOWN_LIMITATIONS_3_8_8.txt',
+            'UNSIGNED_DEVELOPMENT_BUILD.txt'
           )
           $optionalMetadata = @('.gitattributes', '.gitignore')
           $missingFiles = @()
