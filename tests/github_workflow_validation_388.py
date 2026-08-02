@@ -104,6 +104,24 @@ check("installer\\wix\\Package.wxs" in workflow and "installer\\wix\\Bundle.wxs"
 check("KNOWN_LIMITATIONS_3_8_8.txt" in workflow, "checkout preflight verifies the current known-limitations payload")
 check("UNSIGNED_DEVELOPMENT_BUILD.txt" in workflow, "checkout preflight verifies the unsigned-development marker")
 check("updater\\update-public-key.cer" in workflow, "checkout preflight verifies the updater public key")
+check("common\\security_entry.cpp" in workflow, "checkout preflight verifies the no-CRT security entry")
+
+preflight_match = re.search(
+    r"\$requiredFiles\s*=\s*@\((.*?)\)\s*\n\s*\$optionalMetadata",
+    workflow,
+    re.DOTALL,
+)
+preflight_entries = set(re.findall(r"'([^']+)'", preflight_match.group(1))) if preflight_match else set()
+for relative_path in (
+    r"KNOWN_LIMITATIONS_3_8_8.txt",
+    r"UNSIGNED_DEVELOPMENT_BUILD.txt",
+    r"updater\update-public-key.cer",
+    r"common\security_entry.cpp",
+):
+    check(
+        relative_path in preflight_entries,
+        f"preflight requiredFiles contains packaging source: {relative_path}",
+    )
 check("Assert-PackagingInputs" in artifact_build, "artifact build validates packaging inputs before compilation")
 check(artifact_build.index("Assert-PackagingInputs") < artifact_build.index("Initialize-LlvmPath"), "packaging inputs are checked before the compiler toolchain is initialized")
 check("$LogRoot = Join-Path $ArtifactsRoot 'test-logs'" in artifact_build, "artifact build preserves the CI diagnostic directory")

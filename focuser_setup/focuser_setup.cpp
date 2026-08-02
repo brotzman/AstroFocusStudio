@@ -3,7 +3,6 @@
 // the ASCOM Chooser in a visible foreground child process and writes the selected
 // ProgID to a caller-supplied UTF-16 result file.
 
-extern "C" void __security_init_cookie();
 extern "C" {
 int _fltused=0;
 typedef unsigned char BYTE; typedef unsigned short WORD; typedef unsigned int UINT; typedef unsigned long DWORD; typedef long LONG; typedef unsigned long ULONG; typedef long HRESULT; typedef int BOOL; typedef unsigned long long ULONG_PTR; typedef long long LONG_PTR; typedef unsigned long long SIZE_T; typedef unsigned short VARTYPE; typedef short VARIANT_BOOL; typedef wchar_t* BSTR; typedef wchar_t* LPOLESTR; typedef unsigned long LCID; typedef void* HANDLE; typedef HANDLE HMODULE; typedef HANDLE HWND; typedef void* LPVOID; typedef const void* LPCVOID; typedef const wchar_t* LPCWSTR; typedef wchar_t* LPWSTR;
@@ -124,4 +123,4 @@ static UINT RunSetupMode(LPCWSTR cmd){
     vtbl->Release(focuser);CoUninitialize();if(FAILED(hr)){ShowHr(L"Das Öffnen der Treibereinstellungen (SetupDialog)",hr,L"AstroFocus Fokussierer-Kalibrierung");return 6;}return 0;
 }
 
-extern "C" void WinMainCRTStartup(){__security_init_cookie();LPCWSTR cmd=GetCommandLineW();UINT code=HasArg(cmd,L"--choose")?RunChooserMode(cmd):RunSetupMode(cmd);ExitProcess(code);}
+extern "C" void AstroFocusApplicationMain(){LPCWSTR cmd=GetCommandLineW();UINT code=HasArg(cmd,L"--choose")?RunChooserMode(cmd):RunSetupMode(cmd);ExitProcess(code);}

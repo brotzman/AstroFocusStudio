@@ -1,7 +1,6 @@
 // AstroFocus Studio 3.8.8 isolated ASCOM device host.
 // Built twice as AstroFocusCameraHost.exe and AstroFocusFocuserHost.exe.
 
-extern "C" void __security_init_cookie();
 extern "C" {
 int _fltused=0;
 typedef unsigned char BYTE; typedef unsigned short WORD; typedef unsigned int UINT; typedef unsigned long DWORD;
@@ -165,7 +164,7 @@ static HRESULT BuildImagePayload(UINT** pixels,DWORD* bytes,LONG* width,LONG* he
     SafeArrayUnaccessData(sa);VariantClear(&v);*pixels=out;*bytes=(DWORD)need;*width=w;*height=h;*maxAdu=(LONG)seen;return S_OK;
 }
 
-extern "C" void WinMainCRTStartup(){__security_init_cookie();
+extern "C" void AstroFocusApplicationMain(){
     int healthCheckCount=CommandLineArgumentCount(L"--health-check");if(healthCheckCount<0||healthCheckCount>1){ExitProcess(2);return;}
     if(CommandLineContains(L"--health-check")){ExitProcess(AF_HOST_PROTOCOL_VERSION==1?0:20);return;}
     wchar_t pipeName[320];if(!ParsePipeName(GetCommandLineW(),pipeName,320)){ExitProcess(2);return;}

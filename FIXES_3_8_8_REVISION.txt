@@ -1,0 +1,57 @@
+AstroFocus Studio 3.8.8 – geprüfte Sicherheits- und Integritätsrevision
+
+Behobene Punkte
+
+1. Gemeinsame Wartungssperre
+   Installer und Updater verwenden jetzt Global\AstroFocusStudio.Maintenance zusätzlich zu ihren jeweiligen Einzelsperren. Dadurch können Installation, Reparatur, Deinstallation, Update und Rollback nicht mehr gleichzeitig gegeneinander arbeiten.
+
+2. Atomare Fokussierer-Setup-Sperre
+   Die Engine reserviert vor dem Start des ASCOM-Treiberdialogs einen sicheren, vollständig getrennten Fokussiererzustand. Während dieser Reservierung werden Verbindung und automatische Wiederverbindung, Treiber- und Simulatorwechsel, manuelle Bewegung, Autofokus, Schritt-Assistent sowie Backlash-Kalibrierung auch in den internen Kernpfaden blockiert. Die Oberfläche verbindet erst wieder, nachdem die Freigabe durch die Engine bestätigt wurde; bei unklarer Freigabe bleibt das System fail-closed.
+
+3. Eindeutige Argument- und API-Auswertung
+   Doppelte oder beschädigte Kommandozeilenoptionen werden abgelehnt. Eine fehlerhafte spätere Angabe kann keinen früher gelesenen Wert gültig lassen. Zustandsändernde HTTP-Aufrufe lehnen doppelte Abfrageschlüssel vor der Aktionsauswertung ab.
+
+4. Release-Integrität
+   tools/release_integrity.py bildet nun alle sieben ausgelieferten Programme korrekt auf die flachen Dateinamen von SHA256SUMS.txt ab. Buildausgaben, Sicherungskopien und temporäre Dateien werden nicht mehr in SOURCE_SHA256SUMS.txt aufgenommen.
+
+Prüfumfang
+
+- Strenger Windows-x64-Neubau mit /W4 /WX /O2 /GS: bestanden.
+- 12 native ASan-/UBSan-Testprogramme: 1083/1083 Prüfungen bestanden.
+- 22 Python-Vertrags-, Sicherheits- und Regressionstests: 1798/1798 Prüfungen bestanden.
+- Gesamtsumme: 2881/2881 automatisierte Einzelprüfungen bestanden.
+- PE-Härtungsprüfung aller sieben EXE-Dateien: 7/7 bestanden (x64, PE32+, reproduzierbarer Zeitstempel 0, ASLR, High-Entropy-ASLR und DEP/NX).
+- Quellen- und Release-Manifeste: nach der Bereinigung neu erzeugt und vollständig verifiziert.
+
+Nicht in dieser Linux-Buildumgebung ausführbar
+
+Reale ASCOM- und ToupTek-Hardware, USB-Trennung während realer Motorfahrt oder Belichtung, Windows-PowerShell/UAC/Registry, Authenticode, WiX/MSI, Standby/Fortsetzung und nächtlicher Dauerbetrieb benötigen weiterhin einen Windows-Zielrechner beziehungsweise die reale Hardware.
+
+Zusätzliche Paketkorrektur:
+- Der Updater sucht jetzt genau ein vollständiges Setup-Bundle (Setup-EXE + Setup-Skript + Payload), statt fälschlich genau eine AstroFocusSetup.exe im gesamten Archiv zu verlangen. Dadurch ist die notwendige zweite Setup-Kopie im Payload zulässig.
+
+Erneute Paket- und Buildprüfung
+
+- Der Windows-Sammelbuild ruft jetzt auch device_host und tools auf und erstellt damit tatsächlich alle sieben Programme.
+- Die Linux-Buildskripte werden im Quell-ZIP mit ausführbaren Unix-Dateirechten ausgeliefert.
+- Der Release-Integritätstest unterdrückt Python-Bytecode, damit bei der Validierung keine __pycache__-Altlast in das Komplettpaket gelangt.
+- Ein eigener Build-Entry-Point-Test sichert Windows- und Linux-Sammelbuild sowie die saubere Quellstruktur ab.
+
+Abschließende erneute Prüfung vom 2. August 2026
+
+- Verlust der Unix-Ausführungsrechte der drei Linux-Buildskripte im Quellarchiv behoben.
+- Windows-Sammelbuild von drei auf alle sieben Programme vervollständigt.
+- Erzeugung von __pycache__/PYC-Dateien durch den Integritätstest unterbunden und vorhandene Cache-Altlast entfernt.
+- Unsichere Dereferenzierung im Simulator-Regressionstest durch Prüfung beider Frame-Erzeugungsrückgaben abgesichert.
+- Strenger Windows-x64-Gesamtbuild: bestanden.
+- Native ASan-/UBSan-Prüfungen: 257/257 bestanden.
+- Python-Build-, Sicherheits-, Integritäts- und Paketprüfungen: 45/45 bestanden.
+- Aktueller bereinigter Prüfumfang: 302/302 bestanden.
+- Clang Static Analyzer für Frontend, Engine, Fokussierer-Setup, beide Gerätehosts und beide Launcher: 0 Warnungen.
+- Reproduzierbarer Doppelbuild und PE-Härtungsprüfung aller sieben Programme: bestanden.
+
+Security-Cookie-Startup-Fix:
+- Gemeinsamer no-CRT-Einstieg in common/security_entry.cpp.
+- Cookie-Initialisierung erfolgt vor jeder /GS-geschützten Anwendungsfunktion.
+- Behebt den Windows-Fast-Fail 0xC0000409 bei frühen Health-Check-Pfaden.
+- Gilt für alle sieben Windows-x64-Programme.

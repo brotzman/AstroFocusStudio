@@ -18,8 +18,9 @@ build_one(){
   "$CLANG" -target x86_64-pc-windows-msvc -c chkstk.s -o chkstk.obj
   "$CLANG_CL" /nologo /W4 /WX /O2 /GS /DUNICODE /D_UNICODE /c "$source" "/Fo:$object"
   "$CLANG_CL" /nologo /W4 /WX /O2 /GS- /c "$ROOT/common/security_cookie.cpp" /Fo:security_cookie.obj
+  "$CLANG_CL" /nologo /W4 /WX /O2 /GS- /c "$ROOT/common/security_entry.cpp" /Fo:security_entry.obj
   # shellcheck disable=SC2086
-  "$LLD_LINK" /nologo /machine:x64 /timestamp:0 /subsystem:windows /entry:WinMainCRTStartup /nodefaultlib "$object" security_cookie.obj chkstk.obj app.res $libs "/out:$output"
+  "$LLD_LINK" /nologo /machine:x64 /timestamp:0 /subsystem:windows /entry:WinMainCRTStartup /nodefaultlib "$object" security_cookie.obj security_entry.obj chkstk.obj app.res $libs "/out:$output"
 }
 regen_import_libs frontend kernel32
 regen_import_libs backend kernel32

@@ -1,6 +1,5 @@
 // AstroFocus Studio 3.8.8 setup/updater launcher.
 // Starts the fixed sibling PowerShell script and reports bootstrap failures visibly.
-extern "C" void __security_init_cookie();
 extern "C" {
 typedef unsigned long DWORD; typedef int BOOL; typedef unsigned short WORD; typedef unsigned char BYTE;
 typedef long LONG; typedef long long LONG_PTR; typedef unsigned long long SIZE_T; typedef void* HANDLE;
@@ -51,7 +50,7 @@ static BOOL TokenEqualsI(LPCWSTR begin,int length,LPCWSTR expected){int expected
 static BOOL HasSwitch(LPCWSTR args,LPCWSTR expected){if(!args)return FALSE;while(*args){while(*args==L' '||*args==L'\t')args++;if(!*args)break;BOOL quoted=*args==L'\"';if(quoted)args++;LPCWSTR begin=args;while(*args&&((quoted&&*args!=L'\"')||(!quoted&&*args!=L' '&&*args!=L'\t')))args++;if(TokenEqualsI(begin,(int)(args-begin),expected))return TRUE;if(quoted&&*args==L'\"')args++;}return FALSE;}
 static BOOL IsRegularFile(LPCWSTR path){DWORD attributes=GetFileAttributesW(path);return attributes!=INVALID_FILE_ATTRIBUTES&&(attributes&FILE_ATTRIBUTE_DIRECTORY)==0;}
 static void ShowBootstrapError(LPCWSTR detail,DWORD code){wchar_t message[1400]={0};Append(message,1400,detail);if(code){Append(message,1400,L"\n\nWindows-Fehler-/Exitcode: ");AppendUInt(message,1400,code);}Append(message,1400,L"\n\nBitte das Setup vollständig entpacken und erneut starten.");MessageBoxW(0,message,ASTROFOCUS_TOOL_TITLE,MB_OK|MB_ICONERROR|MB_SETFOREGROUND);}
-extern "C" void WinMainCRTStartup(){__security_init_cookie();
+extern "C" void AstroFocusApplicationMain(){
     wchar_t dir[1024]={0},script[1200]={0},powershell[1400]={0},command[8192]={0};
     if(!GetModuleFileNameW(0,dir,1024)){ShowBootstrapError(L"Der Pfad des AstroFocus-Launchers konnte nicht ermittelt werden.",GetLastError());ExitProcess(10);}DirectoryOf(dir);
     if(!Append(script,1200,dir)||!Append(script,1200,ASTROFOCUS_SCRIPT_NAME)||!IsRegularFile(script)){ShowBootstrapError(L"Das zum Launcher gehörende PowerShell-Skript fehlt.",0);ExitProcess(13);}

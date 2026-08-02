@@ -1,11 +1,13 @@
-AstroFocus Studio 3.8.8 – GitHub Actions Installer-Timeout-Fix
+AstroFocus Studio 3.8.8 – Security-Cookie-Startup-Patch
 
-Den Inhalt dieses Archivs in das Hauptverzeichnis des bestehenden Repositorys
-kopieren und vorhandene Dateien ersetzen. Die Ordnerstruktur muss erhalten bleiben.
+Dieser Patch behebt den Windows-Fast-Fail 0xC0000409 beim Health-Check.
 
-Geänderte Dateien:
-- scripts/Test-GitHubInstaller.ps1
-- tests/installer_smoke_timeout_validation_388.py
-- docs/GITHUB_ACTIONS_INSTALLER_TIMEOUT_FIX_DE.md
+Anwendung:
+1. ZIP lokal entpacken.
+2. Den gesamten Inhalt in die Wurzel des bestehenden Repositorys kopieren.
+3. Vorhandene Dateien ersetzen und die Verzeichnisstruktur beibehalten.
+4. Alle Dateien committen und pushen.
+5. Einen neuen Workflow-Lauf für den neuen Commit abwarten.
 
-Danach committen und einen neuen Workflow-Lauf für den neuen Commit starten.
+Wichtig: Nicht nur einzelne Quelldateien auswählen. Der gemeinsame Einstieg,
+alle Buildskripte und die aktualisierten Regressionstests gehören zusammen.

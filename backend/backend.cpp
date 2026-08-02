@@ -4,7 +4,6 @@
 // Celestron Focus Motor, but intentionally uses generic ASCOM interfaces.
 // No separate redistributable runtime package; only Windows system DLLs and installed ASCOM drivers.
 
-extern "C" void __security_init_cookie();
 extern "C" {
 
 int _fltused = 0;
@@ -3215,7 +3214,7 @@ static UINT RunEngineHealthCheck(){
     const char marker[]="AstroFocus Studio 3.8.8 engine health check\r\n";DWORD wrote=0;BOOL ok=WriteFile(h,marker,(DWORD)(sizeof(marker)-1),&wrote,0)&&wrote==(DWORD)(sizeof(marker)-1);CloseHandle(h);DeleteFileW(path);
     return ok?0:25;
 }
-extern "C" void WinMainCRTStartup(){__security_init_cookie();
+extern "C" void AstroFocusApplicationMain(){
     g_instance=(HINSTANCE)GetModuleHandleW(0);BuildIniPath();int healthCheckCount=AfCommandLineArgumentCount(GetCommandLineW(),L"--health-check");if(healthCheckCount<0||healthCheckCount>1)ExitProcess(2);if(healthCheckCount==1)ExitProcess(RunEngineHealthCheck());InstallBackendCrashHandler();g_sessionStartTick=GetTickCount64();SetRuntimeOperation("engine startup");ClearAutofocusError();lstrcpyW(g_lastAutoRefocusReason,L"deaktiviert");HRESULT hr=CoInitializeEx(0,COINIT_APARTMENTTHREADED);if(FAILED(hr))ExitProcess(1);
     g_font=CreateFontW(-16,0,0,0,FW_NORMAL,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH|FF_DONTCARE,L"Segoe UI");g_smallFont=CreateFontW(-14,0,0,0,FW_NORMAL,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH|FF_DONTCARE,L"Segoe UI");g_titleFont=CreateFontW(-21,0,0,0,FW_SEMIBOLD,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH|FF_DONTCARE,L"Segoe UI");g_monoFont=CreateFontW(-17,0,0,0,FW_SEMIBOLD,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH|FF_DONTCARE,L"Consolas");
     g_brushWindow=CreateSolidBrush(RGB(10,15,22));g_brushPanel=CreateSolidBrush(RGB(24,34,46));g_brushBlack=CreateSolidBrush(RGB(0,0,0));g_brushPlot=CreateSolidBrush(RGB(17,25,35));g_penGrid=CreatePen(PS_SOLID,1,RGB(49,64,82));g_penCurve=CreatePen(PS_SOLID,2,RGB(54,132,255));g_penPoint=CreatePen(PS_SOLID,2,RGB(245,195,80));g_penGood=CreatePen(PS_SOLID,1,RGB(90,230,145));g_penBad=CreatePen(PS_SOLID,2,RGB(255,85,85));g_penBest=CreatePen(PS_SOLID,1,RGB(245,105,210));

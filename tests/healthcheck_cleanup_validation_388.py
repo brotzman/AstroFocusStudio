@@ -11,7 +11,7 @@ def check(condition: bool, label: str) -> None:
     print(f"{label}: {'PASS' if condition else 'FAIL'}")
 
 health_start = backend.index("static UINT RunEngineHealthCheck()")
-health_end = backend.index('extern "C" void WinMainCRTStartup()', health_start)
+health_end = backend.index('extern "C" void AstroFocusApplicationMain()', health_start)
 health_body = backend[health_start:health_end]
 
 check('../common/command_line_args.inc' in backend, "engine uses the shared exact command-line parser")
