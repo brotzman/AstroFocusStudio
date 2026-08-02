@@ -377,16 +377,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release_tag.outputs.tag }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" release-files/* --clobber
+          echo "Publishing verified release assets to $GH_REPO at tested commit $GITHUB_SHA"
+          if gh release view --repo "$GH_REPO" "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload --repo "$GH_REPO" "$RELEASE_TAG" release-files/* --clobber
           elif gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG" release-files/* \
+            gh release create --repo "$GH_REPO" "$RELEASE_TAG" release-files/* \
               --title "AstroFocus Studio $RELEASE_TAG" \
               --generate-notes
           else
-            gh release create "$RELEASE_TAG" release-files/* \
+            gh release create --repo "$GH_REPO" "$RELEASE_TAG" release-files/* \
               --target "$GITHUB_SHA" \
               --title "AstroFocus Studio $RELEASE_TAG" \
               --generate-notes
