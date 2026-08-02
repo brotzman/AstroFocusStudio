@@ -1,0 +1,11 @@
+LIBRARY OLEAUT32.dll
+EXPORTS
+SafeArrayAccessData
+SafeArrayGetDim
+SafeArrayGetLBound
+SafeArrayGetUBound
+SafeArrayUnaccessData
+SysAllocString
+SysFreeString
+VariantClear
+VariantInit
