@@ -124,7 +124,10 @@ foreach ($entry in $binaryMap.GetEnumerator()) {
 }
 
 if (-not $SkipPythonTests) {
-    & (Join-Path $PSScriptRoot 'Run-PythonTests.ps1') -RepositoryRoot $RepositoryRoot
+    $pythonLog = Join-Path $LogRoot 'python-tests.log'
+    & (Join-Path $PSScriptRoot 'Run-PythonTests.ps1') `
+        -RepositoryRoot $RepositoryRoot `
+        -LogPath $pythonLog
 }
 
 $payloadFiles = [ordered]@{
