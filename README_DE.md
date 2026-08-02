@@ -1,4 +1,4 @@
-# AstroFocus Studio 3.8.8
+﻿# AstroFocus Studio 3.8.8
 
 AstroFocus Studio ist eine native Windows-x64-Anwendung für Live-Fokus, statistisch ausgewerteten Autofokus, Bahtinov-Unterstützung, Fokusautomation und reproduzierbare Simulatorprüfungen.
 
@@ -31,7 +31,7 @@ ASCOM-Kamera und ASCOM-Fokussierer laufen in getrennten Hostprozessen. Die Engin
 
 Das enthaltene Setup ist nicht öffentlich signiert. Eine Produktionsfreigabe benötigt ein eigenes Code-Signing-Zertifikat beziehungsweise einen geschützten Signierdienst sowie einen eingetragenen Update-Zertifikat-Fingerabdruck.
 
-Der GitHub-Actions-Workflow führt einen vollständigen Windows-x64-Build sowie stille MSI-/Bundle-Installation, Reparatur, Health-Checks und Deinstallation auf einem Windows-2022-Runner aus. Diese automatisierten Prüfungen ersetzen keine Tests auf dem realen Zielsystem. Vor unbeaufsichtigtem Einsatz müssen unter Windows 11 insbesondere bestätigt werden:
+Der GitHub-Actions-Workflow führt einen vollständigen Windows-x64-Build aus und prüft Burn-Bundle und rohes MSI anschließend auf zwei getrennten, frischen Windows-2022-Runnern. Beide Pfade umfassen stille Installation, Reparatur, Health-Checks und Deinstallation. Diese automatisierten Prüfungen ersetzen keine Tests auf dem realen Zielsystem. Vor unbeaufsichtigtem Einsatz müssen unter Windows 11 insbesondere bestätigt werden:
 
 - ASCOM-Chooser und Treiber-`SetupDialog`,
 - Verbindung, Bewegung, Halt und Wiederverbindung des konkreten Fokussierers,
@@ -68,14 +68,14 @@ Die aktuellen 3.8.8-Prüfungen befinden sich gesammelt unter `tests`.
 
 Der vorbereitete Workflow liegt unter `.github/workflows/windows-build.yml`. Er baut
 die sieben Programme auf `windows-2022`, erzeugt mit WiX ein MSI und ein Burn-Setup
-und führt einen echten stillen Installations-, Reparatur- und Deinstallationstest aus.
+und führt echte stille Installations-, Reparatur- und Deinstallationstests auf getrennten, frischen Windows-Runnern aus.
 Die Upload-Anleitung steht in `docs/GITHUB_UPLOAD_DE.md`.
 
 ### CI-Health-Checks und Fehlerbereinigung
 
-Die GitHub-Prüfung startet Kamera-Host, Fokussierer-Host und Engine jetzt als drei
-getrennte Health-Checks. Die Engine startet dabei keine verschachtelten Hostprozesse
-mehr. Bei einem fehlgeschlagenen Test wird eine Bundle-Installation zuerst über das
-Burn-Bundle entfernt; eine direkte MSI-Deinstallation dient nur noch als begrenzter
-Fallback. Details stehen in
-`docs/GITHUB_ACTIONS_HEALTHCHECK_CLEANUP_FIX_DE.md`.
+Die GitHub-Prüfung startet Kamera-Host, Fokussierer-Host und Engine als drei
+getrennte Health-Checks. Burn-Bundle und rohes MSI werden nicht mehr nacheinander auf
+demselben Windows-System geprüft, sondern in zwei unabhängigen Jobs auf frischen
+Runnern. Dadurch kann ein von Burn zurückgelassener Windows-Installer- oder
+Neustartstatus die direkte MSI-Installation nicht blockieren. Details stehen in
+`docs/GITHUB_ACTIONS_MSI_RUNNER_ISOLATION_FIX_DE.md`.

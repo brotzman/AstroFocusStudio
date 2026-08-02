@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Static contract checks for the GitHub Actions and WiX packaging files."""
 from __future__ import annotations
 
@@ -185,6 +185,12 @@ check("release-manifest.json" in artifact_build, "release manifest is generated 
 check("/repair" in installer_test and "AstroFocusFocuserHost.exe" in installer_test, "installer test verifies MSI repair of a missing component")
 check("/uninstall" in installer_test and "msiexec.exe" in installer_test, "installer test covers bundle and MSI removal")
 check("--health-check" in installer_test, "installer test runs installed health checks")
+check("bundle-test:" in workflow and "msi-test:" in workflow, "bundle and raw MSI are tested in separate jobs")
+check("-Mode Bundle" in workflow and "-Mode Msi" in workflow, "isolated jobs select explicit installer modes")
+check("Installer-Test-Input" in workflow, "test jobs consume the exact packages built by the build job")
+check("needs: [windows-build, bundle-test, msi-test]" in workflow, "tagged release waits for both installer test jobs")
+check("[ValidateSet('Bundle', 'Msi')]" in installer_test, "installer test script prevents mixed transaction modes")
+check("'/fa'" in installer_test and "MSI-Reparatur" in installer_test, "raw MSI repair is tested independently")
 
 print(f"GitHub/WiX contract tests: {passed}/{total}")
 sys.exit(0 if passed == total else 1)

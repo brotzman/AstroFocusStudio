@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 backend = (root / "backend" / "backend.cpp").read_text(encoding="utf-8-sig")
@@ -20,9 +20,10 @@ check('RunHostHealthCheck' not in health_body and 'CreateProcess' not in health_
 check('return 21' in health_body and 'return 22' in health_body and 'return 23' in health_body and 'return 24' in health_body, "engine self-check exposes diagnostic exit codes")
 check('AstroFocusCameraHost.exe' in health_body and 'AstroFocusFocuserHost.exe' in health_body, "engine self-check verifies both installed host files")
 check("@('--health-check')" in smoke and smoke.index("AstroFocusCameraHost.exe") < smoke.index("AstroFocusEngine.exe"), "CI checks device hosts directly before the engine")
-check("Bereinigungs-Bundle-Deinstallation" in smoke and "cleanup-bundle-uninstall.log" in smoke, "failure cleanup first uses the owning Burn bundle")
-check(smoke.index("Bereinigungs-Bundle-Deinstallation") < smoke.index("Bereinigungs-MSI-Fallback"), "raw MSI cleanup is only a secondary fallback")
-check("-TimeoutSeconds 90" in smoke and "-TimeoutSeconds 60" in smoke, "cleanup bundle and MSI fallback have bounded timeouts")
+check("if ($Mode -eq 'Bundle')" in smoke and "Bereinigungs-Bundle-Deinstallation" in smoke, "bundle mode cleanup uses the owning Burn bundle")
+check("Bereinigungs-MSI-Deinstallation" in smoke and "cleanup-msi-uninstall.log" in smoke, "MSI mode cleanup uses direct MSI removal on its isolated runner")
+check("Bereinigungs-MSI-Fallback" not in smoke, "cleanup no longer mixes Burn and raw MSI ownership in one run")
+check(smoke.count("-TimeoutSeconds 90") >= 2, "both isolated cleanup paths have bounded timeouts")
 check("Stop-AstroFocusProcesses" in smoke and "Stop-Process -Id" in smoke, "cleanup stops remaining product processes before uninstall")
 check(setup.count("--health-check") >= 1 and "AstroFocusCameraHost.exe','AstroFocusFocuserHost.exe','AstroFocusEngine.exe" in setup, "development installer validates all three runtime executables separately")
 

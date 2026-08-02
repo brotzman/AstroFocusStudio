@@ -1,4 +1,4 @@
-# AstroFocus Studio 3.8.8
+﻿# AstroFocus Studio 3.8.8
 
 Native Windows-x64-Anwendung für Live-Fokus, statistisch ausgewerteten Autofokus,
 Bahtinov-Unterstützung, Fokusautomation und reproduzierbare Simulatorprüfungen.
@@ -88,9 +88,8 @@ sanitizer runtimes. Its logs are uploaded on every success or failure as
 
 ## CI health checks and failed-run cleanup
 
-The Windows installer smoke test now executes the camera host, focuser host, and
-engine as three independent health checks. The engine no longer starts nested host
-processes during its own self-check. If a bundle-installed test run fails, cleanup
-first uninstalls through the Burn bundle; direct MSI removal is a bounded fallback
-only. See `docs/GITHUB_ACTIONS_HEALTHCHECK_CLEANUP_FIX_DE.md` for the detailed
-German diagnostic note.
+The Windows installer smoke tests execute the camera host, focuser host, and
+engine as three independent health checks. Burn and raw MSI transactions run in two
+separate jobs on fresh Windows runners, so Burn registration, pending restart state,
+or Windows Installer transaction state cannot leak into the raw MSI test. See
+`docs/GITHUB_ACTIONS_MSI_RUNNER_ISOLATION_FIX_DE.md` for the detailed German note.

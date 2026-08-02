@@ -1,12 +1,17 @@
 ﻿[CmdletBinding()]
 param(
-    [string]$ProductVersion = '3.8.8'
+    [string]$ProductVersion = '3.8.8',
+    [ValidateSet('Bundle', 'Msi')][string]$Mode = 'Bundle',
+    [string]$RepositoryRoot = ''
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$RepositoryRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
+if ([string]::IsNullOrWhiteSpace($RepositoryRoot)) {
+    $RepositoryRoot = Split-Path -Parent $PSScriptRoot
+}
+$RepositoryRoot = [IO.Path]::GetFullPath($RepositoryRoot)
 $DistRoot = Join-Path $RepositoryRoot 'dist'
 $ArtifactRoot = Join-Path $RepositoryRoot 'artifacts'
 $PayloadRoot = Join-Path $ArtifactRoot 'payload'
@@ -163,38 +168,38 @@ function Stop-AstroFocusProcesses {
 }
 
 function Invoke-CleanupUninstall {
-    if (-not (Test-Path -LiteralPath $InstallRoot)) { return }
     Stop-AstroFocusProcesses
     Start-Sleep -Seconds 2
 
-    # A product installed through Burn must first be removed through the same bundle.
-    # Calling the embedded MSI directly while the bundle owns the registration can block
-    # on the Windows Installer transaction mutex. Raw MSI removal is only a fallback.
+    if ($Mode -eq 'Bundle') {
+        if (-not (Test-Path -LiteralPath $InstallRoot)) { return }
+        try {
+            Invoke-InstallerProcess `
+                -FilePath $BundlePath `
+                -Arguments @('/uninstall', '/quiet', '/norestart', '/log', (Join-Path $LogRoot 'cleanup-bundle-uninstall.log')) `
+                -Description 'Bereinigungs-Bundle-Deinstallation' `
+                -SuccessExitCodes @(0, 1605, 1614, 1641, 3010) `
+                -TimeoutSeconds 90
+        } catch {
+            Write-Warning $_
+            Write-SmokeLog "WARN: bundle cleanup failed: $($_.Exception.Message)"
+        }
+        return
+    }
+
+    # The raw MSI test runs on a separate fresh Windows runner. It must therefore be
+    # cleaned up directly with msiexec and must not involve the Burn registration.
+    if (-not (Test-Path -LiteralPath $InstallRoot)) { return }
     try {
         Invoke-InstallerProcess `
-            -FilePath $BundlePath `
-            -Arguments @('/uninstall', '/quiet', '/norestart', '/log', (Join-Path $LogRoot 'cleanup-bundle-uninstall.log')) `
-            -Description 'Bereinigungs-Bundle-Deinstallation' `
+            -FilePath 'msiexec.exe' `
+            -Arguments @('/x', $MsiPath, '/qn', '/norestart', '/l*v', (Join-Path $LogRoot 'cleanup-msi-uninstall.log')) `
+            -Description 'Bereinigungs-MSI-Deinstallation' `
             -SuccessExitCodes @(0, 1605, 1614, 1641, 3010) `
             -TimeoutSeconds 90
     } catch {
         Write-Warning $_
-        Write-SmokeLog "WARN: bundle cleanup failed: $($_.Exception.Message)"
-    }
-
-    Start-Sleep -Seconds 2
-    if (Test-Path -LiteralPath $InstallRoot) {
-        try {
-            Invoke-InstallerProcess `
-                -FilePath 'msiexec.exe' `
-                -Arguments @('/x', $MsiPath, '/qn', '/norestart', '/l*v', (Join-Path $LogRoot 'cleanup-msi-uninstall.log')) `
-                -Description 'Bereinigungs-MSI-Fallback' `
-                -SuccessExitCodes @(0, 1605, 1614, 1641, 3010) `
-                -TimeoutSeconds 60
-        } catch {
-            Write-Warning $_
-            Write-SmokeLog "WARN: MSI fallback cleanup failed: $($_.Exception.Message)"
-        }
+        Write-SmokeLog "WARN: MSI cleanup failed: $($_.Exception.Message)"
     }
 }
 
@@ -210,35 +215,50 @@ $bundleUninstallLog = Join-Path $LogRoot 'bundle-uninstall.log'
 $msiInstallLog = Join-Path $LogRoot 'msi-install.log'
 $msiUninstallLog = Join-Path $LogRoot 'msi-uninstall.log'
 
-Write-SmokeLog "Installer smoke test started for AstroFocus Studio $ProductVersion"
+Write-SmokeLog "Installer smoke test started for AstroFocus Studio $ProductVersion in $Mode mode"
 try {
-    # Burn bundle: install, verify every payload hash, exercise repair, then uninstall.
-    # Installation is Burn's default action; /install is intentionally omitted because
-    # WixStdBA reports it as an unknown argument.
-    Invoke-InstallerProcess -FilePath $BundlePath -Arguments @('/quiet', '/norestart', '/log', $bundleInstallLog) -Description 'Bundle-Installation' -TimeoutSeconds 180
-    Assert-InstalledPayload
-    Invoke-HealthCheck
+    if ($Mode -eq 'Bundle') {
+        # Burn bundle: install, verify every payload hash, exercise repair, then uninstall.
+        # This mode runs on its own clean GitHub-hosted Windows runner.
+        Invoke-InstallerProcess -FilePath $BundlePath -Arguments @('/quiet', '/norestart', '/log', $bundleInstallLog) -Description 'Bundle-Installation' -TimeoutSeconds 180
+        Assert-InstalledPayload
+        Invoke-HealthCheck
 
-    $repairProbe = Join-Path $InstallRoot 'AstroFocusFocuserHost.exe'
-    Remove-Item -LiteralPath $repairProbe -Force
-    if (Test-Path -LiteralPath $repairProbe) {
-        throw 'Die Reparatur-Testdatei konnte nicht entfernt werden.'
+        $repairProbe = Join-Path $InstallRoot 'AstroFocusFocuserHost.exe'
+        Remove-Item -LiteralPath $repairProbe -Force
+        if (Test-Path -LiteralPath $repairProbe) {
+            throw 'Die Reparatur-Testdatei konnte nicht entfernt werden.'
+        }
+        Invoke-InstallerProcess -FilePath $BundlePath -Arguments @('/repair', '/quiet', '/norestart', '/log', $bundleRepairLog) -Description 'Bundle-Reparatur' -TimeoutSeconds 180
+        Assert-InstalledPayload
+
+        Invoke-InstallerProcess -FilePath $BundlePath -Arguments @('/uninstall', '/quiet', '/norestart', '/log', $bundleUninstallLog) -Description 'Bundle-Deinstallation' -TimeoutSeconds 180
+        Assert-Uninstalled
+        Write-SmokeLog 'PASS: Bundle install, repair, health checks and uninstall'
+        Write-Host 'Bundle-Installation, Reparatur, Health-Checks und Deinstallation wurden bestanden.'
+    } else {
+        # Raw MSI: independently prove install, repair and removal on a fresh runner.
+        # Never run this immediately after a Burn transaction on the same Windows VM:
+        # Burn can leave Windows Installer restart/transaction state behind even when
+        # the bundle itself returns exit code 0.
+        Invoke-InstallerProcess -FilePath 'msiexec.exe' -Arguments @('/i', $MsiPath, '/qn', '/norestart', '/l*v', $msiInstallLog) -Description 'MSI-Installation' -TimeoutSeconds 180
+        Assert-InstalledPayload
+        Invoke-HealthCheck
+
+        $repairProbe = Join-Path $InstallRoot 'AstroFocusFocuserHost.exe'
+        Remove-Item -LiteralPath $repairProbe -Force
+        if (Test-Path -LiteralPath $repairProbe) {
+            throw 'Die MSI-Reparatur-Testdatei konnte nicht entfernt werden.'
+        }
+        $msiRepairLog = Join-Path $LogRoot 'msi-repair.log'
+        Invoke-InstallerProcess -FilePath 'msiexec.exe' -Arguments @('/fa', $MsiPath, '/qn', '/norestart', '/l*v', $msiRepairLog) -Description 'MSI-Reparatur' -TimeoutSeconds 180
+        Assert-InstalledPayload
+
+        Invoke-InstallerProcess -FilePath 'msiexec.exe' -Arguments @('/x', $MsiPath, '/qn', '/norestart', '/l*v', $msiUninstallLog) -Description 'MSI-Deinstallation' -TimeoutSeconds 180
+        Assert-Uninstalled
+        Write-SmokeLog 'PASS: MSI install, repair, health checks and uninstall'
+        Write-Host 'MSI-Installation, Reparatur, Health-Checks und Deinstallation wurden bestanden.'
     }
-    Invoke-InstallerProcess -FilePath $BundlePath -Arguments @('/repair', '/quiet', '/norestart', '/log', $bundleRepairLog) -Description 'Bundle-Reparatur' -TimeoutSeconds 180
-    Assert-InstalledPayload
-
-    Invoke-InstallerProcess -FilePath $BundlePath -Arguments @('/uninstall', '/quiet', '/norestart', '/log', $bundleUninstallLog) -Description 'Bundle-Deinstallation' -TimeoutSeconds 180
-    Assert-Uninstalled
-
-    # Raw MSI: prove that the MSI is independently installable and removable.
-    Invoke-InstallerProcess -FilePath 'msiexec.exe' -Arguments @('/i', $MsiPath, '/qn', '/norestart', '/l*v', $msiInstallLog) -Description 'MSI-Installation' -TimeoutSeconds 180
-    Assert-InstalledPayload
-    Invoke-HealthCheck
-    Invoke-InstallerProcess -FilePath 'msiexec.exe' -Arguments @('/x', $MsiPath, '/qn', '/norestart', '/l*v', $msiUninstallLog) -Description 'MSI-Deinstallation' -TimeoutSeconds 180
-    Assert-Uninstalled
 } finally {
     Invoke-CleanupUninstall
 }
-
-Write-SmokeLog 'PASS: Bundle and MSI install, repair, health checks and uninstall'
-Write-Host 'Bundle- und MSI-Installation, Reparatur, Health-Checks und Deinstallation wurden bestanden.'
