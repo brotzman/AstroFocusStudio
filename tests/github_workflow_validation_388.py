@@ -197,7 +197,11 @@ check("release_tag:" in workflow and "default: 'v3.8.8'" in workflow, "manual re
 check("inputs.publish_release == true" in workflow, "release job is gated by the manual publish switch")
 check('expected_tag="v${PRODUCT_VERSION}"' in workflow, "release tag must match the built product version")
 check('--target "$GITHUB_SHA"' in workflow, "manual publishing creates a missing tag at the tested commit")
-check('gh release upload "$RELEASE_TAG" release-files/* --clobber' in workflow, "existing releases are updated without duplicating assets")
+check('GH_REPO: ${{ github.repository }}' in workflow, "release job binds GitHub CLI to the explicit repository")
+check('gh release view --repo "$GH_REPO" "$RELEASE_TAG"' in workflow, "release lookup does not depend on a local Git checkout")
+check('gh release upload --repo "$GH_REPO" "$RELEASE_TAG" release-files/* --clobber' in workflow, "existing releases are updated without duplicating assets")
+check(workflow.count('gh release create --repo "$GH_REPO"') == 2, "both release-creation paths use an explicit repository")
+check('gh release view "$RELEASE_TAG"' not in workflow, "release job has no repository-implicit GitHub CLI lookup")
 
 check('StandardDirectory Id="DesktopFolder"' in package and 'Scope="perMachine"' in package, "WiX package uses DesktopFolder in per-machine context for the public desktop")
 check('CommonDesktopFolder' not in package, "WiX package avoids unsupported CommonDesktopFolder in WiX 5")

@@ -1,16 +1,10 @@
-AstroFocus Studio 3.8.8 – Desktopverknüpfungs-Prüfung
+AstroFocus Studio 3.8.8 – GitHub-Release-Repository-Kontext-Fix
 
-Den Inhalt dieses Archivs in das Hauptverzeichnis des bestehenden GitHub-Repositorys kopieren.
-Vorhandene Dateien ersetzen und die Ordnerstruktur beibehalten.
-
-Geändert werden:
-- scripts/Test-GitHubInstaller.ps1
-- tests/desktop_shortcut_runtime_validation_388.py
-- docs/GITHUB_ACTIONS_SHORTCUT_RUNTIME_FIX_DE.md
+Den Inhalt dieses ZIP-Archivs in das Hauptverzeichnis des bestehenden Repositorys kopieren. Vorhandene Dateien ersetzen und die Ordnerstruktur beibehalten.
 
 Danach:
   git add -A
-  git commit -m "Make desktop shortcut smoke test robust"
+  git commit -m "Fix GitHub release repository context"
   git push
 
-Nicht den alten Workflow-Lauf erneut ausführen, sondern den Lauf des neuen Commits verwenden.
+Für die Veröffentlichung den neuen Workflow-Lauf des neuen Commits verwenden. Ein erneutes Ausführen des alten Workflow-Laufs verwendet weiterhin dessen alten Workflowstand.
