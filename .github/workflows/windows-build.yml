@@ -137,6 +137,7 @@ jobs:
             'scripts\Run-NativeTests.sh',
             'tests\github_workflow_validation_388.py',
             'build-all-windows-x64.bat',
+            'common\security_entry.cpp',
             'installer\build-wix.ps1',
             'installer\wix\Package.wxs',
             'installer\wix\Bundle.wxs',
