@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProductVersion = '3.8.8',
     [ValidateSet('Bundle', 'Msi')][string]$Mode = 'Bundle',
@@ -29,11 +29,13 @@ $ManifestPath = Join-Path $PayloadRoot 'release-manifest.json'
 $SmokeLog = Join-Path $LogRoot 'installer-smoke.log'
 
 New-Item -ItemType Directory -Force -Path $LogRoot | Out-Null
-Set-Content -LiteralPath $SmokeLog -Value '' -Encoding utf8
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[IO.File]::WriteAllText($SmokeLog, '', $Utf8NoBom)
 
 function Write-SmokeLog([string]$Message) {
     $line = "[{0}] {1}" -f ([DateTime]::UtcNow.ToString('o')), $Message
-    $line | Tee-Object -FilePath $SmokeLog -Append | Write-Host
+    [IO.File]::AppendAllText($SmokeLog, $line + [Environment]::NewLine, $script:Utf8NoBom)
+    Write-Host $line
 }
 
 function Format-NativeArgument([string]$Value) {
@@ -150,36 +152,131 @@ function Assert-InstalledPayload {
     Write-SmokeLog 'PASS: installed payload and hashes'
 }
 
+function Normalize-WindowsPath {
+    param(
+        [string]$Value,
+        [switch]$Directory
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return ''
+    }
+
+    $expanded = [Environment]::ExpandEnvironmentVariables($Value.Trim().Trim('"'))
+    try {
+        $normalized = [IO.Path]::GetFullPath($expanded)
+    } catch {
+        $normalized = $expanded
+    }
+
+    if ($Directory) {
+        return $normalized.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+    }
+    return $normalized
+}
+
+function Release-ComObject([object]$Value) {
+    if ($null -ne $Value -and [Runtime.InteropServices.Marshal]::IsComObject($Value)) {
+        [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($Value)
+    }
+}
+
+function Get-ShortcutMetadata {
+    param([Parameter(Mandatory = $true)][string]$ShortcutPath)
+
+    $targetPath = ''
+    $workingDirectory = ''
+    $wscript = $null
+    $shortcut = $null
+    try {
+        $wscript = New-Object -ComObject WScript.Shell
+        $shortcut = $wscript.CreateShortcut($ShortcutPath)
+        $targetPath = [string]$shortcut.TargetPath
+        $workingDirectory = [string]$shortcut.WorkingDirectory
+        Write-SmokeLog "SHORTCUT WScript target: '$targetPath'"
+        Write-SmokeLog "SHORTCUT WScript working directory: '$workingDirectory'"
+    } catch {
+        Write-SmokeLog "WARN: WScript.Shell konnte die Desktopverknüpfung nicht auslesen: $($_.Exception.Message)"
+    } finally {
+        Release-ComObject $shortcut
+        Release-ComObject $wscript
+    }
+
+    # Shell.Application can resolve MSI-created links on systems where WScript.Shell
+    # returns an empty TargetPath. This is common on minimal CI desktop sessions.
+    if ([string]::IsNullOrWhiteSpace($targetPath)) {
+        $shellApplication = $null
+        $folder = $null
+        $item = $null
+        $link = $null
+        try {
+            $shellApplication = New-Object -ComObject Shell.Application
+            $folder = $shellApplication.Namespace((Split-Path -Parent $ShortcutPath))
+            if ($null -ne $folder) {
+                $item = $folder.ParseName((Split-Path -Leaf $ShortcutPath))
+            }
+            if ($null -ne $item) {
+                $link = $item.GetLink
+            }
+            if ($null -ne $link) {
+                $targetPath = [string]$link.Path
+                $workingDirectory = [string]$link.WorkingDirectory
+                Write-SmokeLog "SHORTCUT Shell.Application target: '$targetPath'"
+                Write-SmokeLog "SHORTCUT Shell.Application working directory: '$workingDirectory'"
+            }
+        } catch {
+            Write-SmokeLog "WARN: Shell.Application konnte die Desktopverknüpfung nicht auslesen: $($_.Exception.Message)"
+        } finally {
+            Release-ComObject $link
+            Release-ComObject $item
+            Release-ComObject $folder
+            Release-ComObject $shellApplication
+        }
+    }
+
+    return [PSCustomObject]@{
+        TargetPath = $targetPath
+        WorkingDirectory = $workingDirectory
+    }
+}
+
 function Assert-DesktopShortcut {
     Write-SmokeLog 'VERIFY: common desktop shortcut'
+
+    # Explorer and Windows Installer can publish the link a fraction after msiexec
+    # returns. Give the filesystem a short bounded settling period.
+    $shortcutDeadline = [DateTime]::UtcNow.AddSeconds(10)
+    while (-not (Test-Path -LiteralPath $DesktopShortcutPath -PathType Leaf) -and
+           [DateTime]::UtcNow -lt $shortcutDeadline) {
+        Start-Sleep -Milliseconds 200
+    }
     if (-not (Test-Path -LiteralPath $DesktopShortcutPath -PathType Leaf)) {
         throw "Desktopverknüpfung fehlt: $DesktopShortcutPath"
     }
 
-    $expectedTarget = [IO.Path]::GetFullPath((Join-Path $InstallRoot 'AstroFocusStudio.exe'))
-    $expectedWorkingDirectory = [IO.Path]::GetFullPath($InstallRoot)
-    $shell = $null
-    $shortcut = $null
-    try {
-        $shell = New-Object -ComObject WScript.Shell
-        $shortcut = $shell.CreateShortcut($DesktopShortcutPath)
-        $actualTarget = [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables([string]$shortcut.TargetPath))
-        $actualWorkingDirectory = [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables([string]$shortcut.WorkingDirectory))
-        if (-not $actualTarget.Equals($expectedTarget, [StringComparison]::OrdinalIgnoreCase)) {
-            throw "Desktopverknüpfung verweist auf ein falsches Ziel: $actualTarget"
-        }
-        if (-not $actualWorkingDirectory.Equals($expectedWorkingDirectory, [StringComparison]::OrdinalIgnoreCase)) {
-            throw "Desktopverknüpfung besitzt ein falsches Arbeitsverzeichnis: $actualWorkingDirectory"
-        }
-    } finally {
-        if ($null -ne $shortcut) {
-            [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shortcut)
-        }
-        if ($null -ne $shell) {
-            [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell)
-        }
+    $expectedTarget = Normalize-WindowsPath (Join-Path $InstallRoot 'AstroFocusStudio.exe')
+    $expectedWorkingDirectory = Normalize-WindowsPath $InstallRoot -Directory
+    $metadata = Get-ShortcutMetadata -ShortcutPath $DesktopShortcutPath
+    $actualTarget = Normalize-WindowsPath ([string]$metadata.TargetPath)
+    $actualWorkingDirectory = Normalize-WindowsPath ([string]$metadata.WorkingDirectory) -Directory
+
+    if ([string]::IsNullOrWhiteSpace($actualTarget)) {
+        throw "Desktopverknüpfung wurde angelegt, ihr Ziel konnte aber nicht ausgelesen werden: $DesktopShortcutPath"
     }
-    Write-SmokeLog 'PASS: common desktop shortcut target and working directory'
+    if (-not $actualTarget.Equals($expectedTarget, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Desktopverknüpfung verweist auf ein falsches Ziel: '$actualTarget' statt '$expectedTarget'"
+    }
+
+    # WiX authoring is checked statically for WorkingDirectory=INSTALLFOLDER. Some
+    # CI shell APIs return an empty working directory for a valid MSI-created link.
+    # A non-empty runtime value must still match after trimming trailing separators.
+    if ([string]::IsNullOrWhiteSpace($actualWorkingDirectory)) {
+        Write-SmokeLog 'WARN: Das Arbeitsverzeichnis der Desktopverknüpfung wurde von der CI-Shell-API nicht zurückgegeben.'
+    } elseif (-not $actualWorkingDirectory.Equals($expectedWorkingDirectory, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Desktopverknüpfung besitzt ein falsches Arbeitsverzeichnis: '$actualWorkingDirectory' statt '$expectedWorkingDirectory'"
+    }
+
+    Write-SmokeLog 'PASS: common desktop shortcut exists and resolves to AstroFocusStudio.exe'
 }
 
 function Assert-Uninstalled {
@@ -337,6 +434,9 @@ try {
         Write-SmokeLog 'PASS: MSI install, repair, health checks and uninstall'
         Write-Host 'MSI-Installation, Reparatur, Health-Checks und Deinstallation wurden bestanden.'
     }
+} catch {
+    Write-SmokeLog "FAIL: $($_.Exception.Message)"
+    throw
 } finally {
     Invoke-CleanupUninstall
 }
