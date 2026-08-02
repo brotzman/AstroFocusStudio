@@ -1,13 +1,11 @@
-AstroFocus Studio 3.8.8 – GitHub-Patch für fehlende Payload-Quelldateien
+AstroFocus Studio 3.8.8 – GitHub Actions Installer-Timeout-Fix
 
-1. Dieses ZIP lokal entpacken.
-2. Den gesamten Inhalt in das Hauptverzeichnis des GitHub-Repositories kopieren.
-3. Vorhandene Dateien ersetzen und die Ordnerstruktur beibehalten.
-4. Prüfen, dass KNOWN_LIMITATIONS_3_8_8.txt direkt im Repository-Hauptverzeichnis liegt.
-5. Anschließend ausführen:
+Den Inhalt dieses Archivs in das Hauptverzeichnis des bestehenden Repositorys
+kopieren und vorhandene Dateien ersetzen. Die Ordnerstruktur muss erhalten bleiben.
 
-   git add -A
-   git commit -m "Restore installer payload sources and validate them before build"
-   git push
+Geänderte Dateien:
+- scripts/Test-GitHubInstaller.ps1
+- tests/installer_smoke_timeout_validation_388.py
+- docs/GITHUB_ACTIONS_INSTALLER_TIMEOUT_FIX_DE.md
 
-Der Patch enthält vorsorglich alle nicht kompilierten Quelldateien, die in das MSI-Payload übernommen werden. Dadurch folgt nicht nach der reparierten Datei sofort der nächste Abbruch wegen einer weiteren fehlenden Payload-Datei.
+Danach committen und einen neuen Workflow-Lauf für den neuen Commit starten.
