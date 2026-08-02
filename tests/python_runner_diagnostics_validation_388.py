@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+"""Contract checks for complete Python-test diagnostics on Windows PowerShell 5.1."""
+from pathlib import Path
+import sys
+
+root = Path(__file__).resolve().parents[1]
+runner = (root / "scripts" / "Run-PythonTests.ps1").read_text(encoding="utf-8-sig")
+workflow = (root / ".github" / "workflows" / "windows-build.yml").read_text(encoding="utf-8-sig")
+validator = (root / "tests" / "github_workflow_validation_388.py").read_text(encoding="utf-8-sig")
+builder = (root / "scripts" / "Build-GitHubArtifacts.ps1").read_text(encoding="utf-8-sig")
+
+checks = [
+    ("Start-Process" in runner, "runner uses Process execution instead of a native stderr pipeline"),
+    ("RedirectStandardOutput" in runner, "runner captures complete stdout"),
+    ("RedirectStandardError" in runner, "runner captures complete stderr/tracebacks"),
+    ("-X', 'utf8'" in runner, "Python runs in deterministic UTF-8 mode"),
+    ("python-tests.log" in runner and "python-tests.log" in builder, "complete Python log is preserved under CI diagnostics"),
+    ("installer\\wix\\Package.wxs" in workflow, "preflight requires Package.wxs"),
+    ("installer\\wix\\Bundle.wxs" in workflow, "preflight requires Bundle.wxs"),
+    ("required GitHub/WiX files are missing" in validator, "validator reports missing inputs without a traceback"),
+    ("utf-8-sig" in validator, "validator accepts normal UTF-8 and UTF-8 BOM files"),
+]
+
+passed = 0
+for condition, message in checks:
+    if condition:
+        passed += 1
+        print(f"{message}: PASS")
+    else:
+        print(f"{message}: FAIL")
+print(f"SUMMARY {passed}/{len(checks)}")
+sys.exit(0 if passed == len(checks) else 1)

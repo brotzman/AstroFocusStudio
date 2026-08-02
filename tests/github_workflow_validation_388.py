@@ -22,14 +22,43 @@ def check(condition: bool, message: str) -> None:
         print(f"FAIL: {message}")
 
 
-workflow_path = ROOT / ".github" / "workflows" / "windows-build.yml"
-workflow = workflow_path.read_text(encoding="utf-8")
-package = (ROOT / "installer" / "wix" / "Package.wxs").read_text(encoding="utf-8")
-bundle = (ROOT / "installer" / "wix" / "Bundle.wxs").read_text(encoding="utf-8")
-wix_build = (ROOT / "installer" / "build-wix.ps1").read_text(encoding="utf-8")
-artifact_build = (ROOT / "scripts" / "Build-GitHubArtifacts.ps1").read_text(encoding="utf-8")
-installer_test = (ROOT / "scripts" / "Test-GitHubInstaller.ps1").read_text(encoding="utf-8")
-gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+required_text_files = {
+    "workflow": ROOT / ".github" / "workflows" / "windows-build.yml",
+    "package": ROOT / "installer" / "wix" / "Package.wxs",
+    "bundle": ROOT / "installer" / "wix" / "Bundle.wxs",
+    "wix_build": ROOT / "installer" / "build-wix.ps1",
+    "artifact_build": ROOT / "scripts" / "Build-GitHubArtifacts.ps1",
+    "installer_test": ROOT / "scripts" / "Test-GitHubInstaller.ps1",
+    "native_script": ROOT / "scripts" / "Run-NativeTests.sh",
+    "gitattributes": ROOT / ".gitattributes",
+    "gitignore": ROOT / ".gitignore",
+}
+
+missing = [str(path.relative_to(ROOT)) for path in required_text_files.values() if not path.is_file()]
+if missing:
+    print("FAIL: required GitHub/WiX files are missing from the checked-out commit:")
+    for relative_path in missing:
+        print(f"  - {relative_path}")
+    sys.exit(1)
+
+loaded: dict[str, str] = {}
+for name, path in required_text_files.items():
+    try:
+        loaded[name] = path.read_text(encoding="utf-8-sig")
+    except (OSError, UnicodeError) as exc:
+        print(f"FAIL: cannot read {path.relative_to(ROOT)} as UTF-8: {exc}")
+        sys.exit(1)
+
+workflow_path = required_text_files["workflow"]
+workflow = loaded["workflow"]
+package = loaded["package"]
+bundle = loaded["bundle"]
+wix_build = loaded["wix_build"]
+artifact_build = loaded["artifact_build"]
+installer_test = loaded["installer_test"]
+native_script = loaded["native_script"]
+gitattributes = loaded["gitattributes"]
+gitignore = loaded["gitignore"]
 
 check("runs-on: windows-2022" in workflow, "Windows build uses a fixed supported runner")
 check("actions/checkout@v7" in workflow, "checkout action uses the current v7 major")
@@ -46,7 +75,6 @@ check("CXX=$compiler" in workflow, "resolved compiler is exported explicitly to 
 check("native-sanitizers.log" in workflow, "native sanitizer output is persisted as a diagnostic log")
 check("Native-Sanitizer-Logs" in workflow and "if: always()" in workflow, "native logs are uploaded even after a failed test")
 check("run: ./scripts/Run-NativeTests.sh" not in workflow, "workflow has no direct executable-bit-dependent native test invocation")
-gitattributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
 check("*.sh text eol=lf" in gitattributes, "shell scripts are checked out with LF line endings")
 check("permissions:\n  contents: read" in workflow, "default workflow permissions are read-only")
 check("contents: write" in workflow, "release job explicitly receives write permission")
@@ -58,6 +86,9 @@ check("-ExecutionPolicy Bypass" in workflow and "-File $buildScript" in workflow
 check("& .\\scripts\\Build-GitHubArtifacts.ps1" not in workflow, "workflow no longer relies on a fragile relative build-script invocation")
 check("build-package.log" in workflow and "Tee-Object" in workflow, "Windows build output is persisted even when packaging fails")
 check("path: artifacts/test-logs/" in workflow and "if-no-files-found: error" in workflow, "diagnostic upload always requires a real log artifact")
+check("python-tests.log" in workflow or "python-tests.log" in artifact_build, "Python test output is persisted as a complete diagnostic log")
+check("Start-Process" in (ROOT / "scripts" / "Run-PythonTests.ps1").read_text(encoding="utf-8-sig"), "Python runner captures stdout and stderr without PowerShell NativeCommandError truncation")
+check("installer\\wix\\Package.wxs" in workflow and "installer\\wix\\Bundle.wxs" in workflow, "checkout preflight verifies both WiX source files")
 check("$LogRoot = Join-Path $ArtifactsRoot 'test-logs'" in artifact_build, "artifact build preserves the CI diagnostic directory")
 check("& lld-link.exe --version" in artifact_build, "LLD version probe uses the supported GNU-style long option")
 check("lld-link.exe /version" not in artifact_build, "LLD version probe is not passed to the linker as an input path")
@@ -67,9 +98,8 @@ for source in (
     "tests/frontend_logic_validation_388.cpp",
     "tests/actual_backend_validation_388.cpp",
 ):
-    check(source in (ROOT / "scripts" / "Run-NativeTests.sh").read_text(encoding="utf-8"), f"native test is included: {source}")
+    check(source in native_script, f"native test is included: {source}")
 
-native_script = (ROOT / "scripts" / "Run-NativeTests.sh").read_text(encoding="utf-8")
 check("-static-libsan" in native_script, "Clang sanitizer runtimes are embedded to prevent loader exit 127")
 check('command -v "$CXX"' in native_script, "native script validates the selected compiler explicitly")
 check("binary diagnostics" in native_script and 'ldd "$binary"' in native_script, "native script records loader diagnostics on test failure")

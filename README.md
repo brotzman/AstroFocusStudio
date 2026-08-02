@@ -81,3 +81,7 @@ Veröffentlichung sollte der Rechteinhaber eine passende `LICENSE` ergänzen.
 The native test job selects a versioned Clang compiler explicitly and embeds the
 sanitizer runtimes. Its logs are uploaded on every success or failure as
 `AstroFocusStudio-3.8.8-Native-Sanitizer-Logs`.
+
+## CI repository integrity
+
+- The Windows workflow validates all required `scripts/` entry points and invokes the artifact build from the absolute `GITHUB_WORKSPACE` path.
