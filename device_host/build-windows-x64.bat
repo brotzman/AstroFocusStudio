@@ -2,7 +2,7 @@
 setlocal
 for %%D in (kernel32 ole32 oleaut32) do (
   lld-link /nologo /machine:x64 /dll /noentry /def:%%D.def /out:%%D_stub.dll /implib:%%D.lib || exit /b 1
-  del /q %%D_stub.dll
+  if exist "%%D_stub.dll" del /q "%%D_stub.dll" >nul 2>&1
 )
 clang -target x86_64-pc-windows-msvc -c chkstk.s -o chkstk.obj || exit /b 1
 clang-cl /nologo /W4 /WX /O2 /GS- /c ..\common\security_cookie.cpp /Fo:security_cookie.obj || exit /b 1

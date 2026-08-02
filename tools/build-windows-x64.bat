@@ -2,7 +2,8 @@
 setlocal
 lld-link /nologo /machine:x64 /dll /noentry /def:kernel32.def /out:kernel32_stub.dll /implib:kernel32.lib || exit /b 1
 lld-link /nologo /machine:x64 /dll /noentry /def:user32.def /out:user32_stub.dll /implib:user32.lib || exit /b 1
-del /q kernel32_stub.dll user32_stub.dll
+if exist "kernel32_stub.dll" del /q "kernel32_stub.dll" >nul 2>&1
+if exist "user32_stub.dll" del /q "user32_stub.dll" >nul 2>&1
 clang -target x86_64-pc-windows-msvc -c chkstk.s -o chkstk.obj || exit /b 1
 clang-cl /nologo /W4 /WX /O2 /GS- /c ..\common\security_cookie.cpp /Fo:security_cookie.obj || exit /b 1
 clang-cl /nologo /W4 /WX /O2 /GS /DUNICODE /D_UNICODE /DASTROFOCUS_SCRIPT_NAME=L\"AstroFocusUpdater.ps1\" /DASTROFOCUS_TOOL_TITLE=L\"AstroFocus Studio Updater\" /c tool_launcher.cpp /Fo:updater_launcher.obj || exit /b 1

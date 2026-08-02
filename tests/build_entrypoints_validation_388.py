@@ -31,6 +31,19 @@ checks = {
         for name in expected_outputs
         if name in script.read_text(encoding="utf-8", errors="ignore")
     },
+    "device-host build deletes optional linker stubs only when present":
+        'if exist "%%D_stub.dll" del /q "%%D_stub.dll" >nul 2>&1' in
+        (root / "device_host" / "build-windows-x64.bat").read_text(encoding="utf-8"),
+    "tool build deletes optional linker stubs only when present": all(
+        f'if exist "{name}_stub.dll" del /q "{name}_stub.dll" >nul 2>&1' in
+        (root / "tools" / "build-windows-x64.bat").read_text(encoding="utf-8")
+        for name in ("kernel32", "user32")
+    ),
+    "batch builds contain no unconditional deletion of optional stub DLLs": all(
+        not line.lstrip().lower().startswith("del /q ")
+        for script in (root / "device_host" / "build-windows-x64.bat", root / "tools" / "build-windows-x64.bat")
+        for line in script.read_text(encoding="utf-8").splitlines()
+    ),
     "source tree contains no Python cache remnants": not any(root.rglob("*.pyc")) and not any(root.rglob("__pycache__")),
 }
 
