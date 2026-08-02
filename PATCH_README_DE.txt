@@ -1,19 +1,19 @@
-AstroFocus Studio 3.8.8 – Standardfenster-/Taskleisten-Patch
+AstroFocus Studio 3.8.8 – GitHub-Release- und Desktopverknüpfungs-Patch
 
-Dieses Patchpaket entfernt das bisherige "Minimieren in den Infobereich" des
-Hauptfensters. Beim Minimieren bleibt AstroFocus Studio als normale Schaltfläche
-in der Windows-Taskleiste sichtbar und kann von dort wiederhergestellt oder
-maximiert werden.
+1. Dieses ZIP lokal entpacken.
+2. Den Inhalt in das Hauptverzeichnis des vorhandenen Repositorys kopieren.
+3. Vorhandene Dateien ersetzen; die Ordnerstruktur einschließlich .github beibehalten.
+4. Danach committen und pushen:
 
-Anwendung:
-1. ZIP lokal entpacken.
-2. Den gesamten Inhalt in das Hauptverzeichnis des GitHub-Repositorys kopieren.
-3. Vorhandene Dateien ersetzen und die Ordnerstruktur beibehalten.
-4. Commit und Push erstellen. Der vorhandene GitHub-Actions-Workflow baut danach
-   MSI, Setup-EXE und portable Pakete neu.
+   git add -A
+   git commit -m "Add manual tag release and desktop shortcut"
+   git push
 
-Geänderte Programmlogik:
-- kein ShowWindow(..., SW_HIDE) mehr im SIZE_MINIMIZED-Pfad
-- keine Tray-Icon-Erzeugung beim Minimieren
-- normale WS_OVERLAPPED-/Taskleisten-Semantik bleibt erhalten
-- nicht mehr benötigte Tray-Implementierung aus dem Frontend entfernt
+Neues Verhalten:
+- Normaler Push: Build und Tests, aber kein Release.
+- Push des Tags v3.8.8: Nach allen Tests wird das GitHub Release veröffentlicht.
+- Manueller Start unter Actions mit publish_release=true und release_tag=v3.8.8:
+  Nach allen Tests wird ein fehlender Tag am geprüften Commit erzeugt und das Release
+  erstellt beziehungsweise aktualisiert.
+- MSI und Setup legen AstroFocus Studio.lnk auf dem öffentlichen Windows-Desktop an.
+- Bundle- und MSI-Smoke-Tests prüfen Verknüpfung, Reparatur und Entfernung.

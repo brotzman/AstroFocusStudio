@@ -67,6 +67,24 @@
       </Directory>
     </StandardDirectory>
 
+    <StandardDirectory Id="CommonDesktopFolder">
+      <Component Id="CmpDesktopShortcut" Guid="*" Bitness="always64">
+        <Shortcut
+            Id="DesktopShortcutLink"
+            Name="AstroFocus Studio"
+            Description="AstroFocus Studio 3.8.8"
+            Target="[INSTALLFOLDER]AstroFocusStudio.exe"
+            WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue
+            Root="HKLM"
+            Key="Software\Thomas Brotze\AstroFocus Studio"
+            Name="DesktopShortcut"
+            Type="integer"
+            Value="1"
+            KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
     <StandardDirectory Id="ProgramMenuFolder">
       <Directory Id="ProgramMenuProductFolder" Name="AstroFocus Studio">
         <Component Id="StartMenuShortcut" Guid="*" Bitness="always64">
@@ -106,6 +124,7 @@
       <ComponentRef Id="CmpUnsignedDevelopmentMarker" />
       <?endif?>
       <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="CmpDesktopShortcut" />
     </Feature>
   </Package>
 </Wix>

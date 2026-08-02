@@ -1,4 +1,4 @@
-﻿# AstroFocus Studio 3.8.8
+# AstroFocus Studio 3.8.8
 
 Native Windows-x64-Anwendung für Live-Fokus, statistisch ausgewerteten Autofokus,
 Bahtinov-Unterstützung, Fokusautomation und reproduzierbare Simulatorprüfungen.
@@ -29,7 +29,9 @@ Nach einem erfolgreichen Build liegt unter **Actions → Artifacts** das Artefak
 - `BUILD_INFO.txt`
 
 Ein Tag wie `v3.8.8` veröffentlicht dieselben, zuvor geprüften Dateien zusätzlich als
-GitHub Release.
+GitHub Release. Alternativ kann der Workflow manuell mit `publish_release: true` und
+`release_tag: v3.8.8` gestartet werden; der Tag wird dann nach allen erfolgreichen
+Tests am geprüften Commit erstellt, sofern er noch nicht existiert.
 
 ## Lokaler Build
 
@@ -99,3 +101,7 @@ or Windows Installer transaction state cannot leak into the raw MSI test. See
 - When minimized, AstroFocus Studio remains visible as a normal Windows taskbar button.
 - The main window is no longer hidden or moved to the notification area and can be restored or maximized normally from the taskbar.
 
+
+### Desktop shortcut
+
+The per-machine WiX installer creates **AstroFocus Studio.lnk** on the public Windows desktop. Both the Burn and raw-MSI smoke tests verify its target and working directory, repair preserves it, and uninstall removes it.

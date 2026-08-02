@@ -1,4 +1,4 @@
-﻿# AstroFocus Studio 3.8.8
+# AstroFocus Studio 3.8.8
 
 AstroFocus Studio ist eine native Windows-x64-Anwendung für Live-Fokus, statistisch ausgewerteten Autofokus, Bahtinov-Unterstützung, Fokusautomation und reproduzierbare Simulatorprüfungen.
 
@@ -24,6 +24,7 @@ AstroFocus Studio ist eine native Windows-x64-Anwendung für Live-Fokus, statist
 
 ### Installer und Updater
 
+- Der MSI-Installer legt automatisch eine Verknüpfung **AstroFocus Studio** auf dem öffentlichen Windows-Desktop an. Reparatur stellt sie wieder her; Deinstallation entfernt sie.
 - Eine fehlende oder beschädigte installierte `release-manifest.json` wird nicht mehr als gebündelte Programmversion ausgegeben. Der Updater markiert den Zustand als unbekannt und fordert Reparatur oder Rollback.
 - Installer und Updater verhindern parallele Instanzen derselben Wartungsoperation über benannte Mutex-Sperren.
 - Updatepakete werden weiterhin über HTTPS, RSA-signiertes Manifest, SHA-256, Authenticode-Herausgeber, sichere ZIP-Extraktion, Health-Check und Rollback abgesichert.
@@ -84,3 +85,7 @@ demselben Windows-System geprüft, sondern in zwei unabhängigen Jobs auf frisch
 Runnern. Dadurch kann ein von Burn zurückgelassener Windows-Installer- oder
 Neustartstatus die direkte MSI-Installation nicht blockieren. Details stehen in
 `docs/GITHUB_ACTIONS_MSI_RUNNER_ISOLATION_FIX_DE.md`.
+
+### Tag und GitHub Release veröffentlichen
+
+Der Workflow veröffentlicht geprüfte Dateien weiterhin automatisch bei einem Push des Tags `v3.8.8`. Zusätzlich kann unter **Actions → Build and test Windows installer → Run workflow** die Option **publish_release** aktiviert werden. Der Workflow baut und testet zuerst alle Pakete, erzeugt danach bei Bedarf den Tag `v3.8.8` am geprüften Commit und erstellt oder aktualisiert das GitHub Release. Ein Tag, der nicht zur `PRODUCT_VERSION` passt, wird abgelehnt.

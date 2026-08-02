@@ -55,3 +55,8 @@ Security-Cookie-Startup-Fix:
 - Cookie-Initialisierung erfolgt vor jeder /GS-geschützten Anwendungsfunktion.
 - Behebt den Windows-Fast-Fail 0xC0000409 bei frühen Health-Check-Pfaden.
 - Gilt für alle sieben Windows-x64-Programme.
+
+GitHub-Release- und Desktopintegration:
+- workflow_dispatch kann nach allen bestandenen Tests mit publish_release=true den Tag v3.8.8 am geprüften Commit anlegen und ein GitHub Release erstellen oder aktualisieren.
+- Das perMachine-WiX-Paket installiert eine eigene reparierbare Desktopverknüpfungs-Komponente im CommonDesktopFolder.
+- Die getrennten Bundle- und MSI-Tests validieren die Verknüpfung nach Installation und Reparatur sowie ihre Entfernung nach der Deinstallation.

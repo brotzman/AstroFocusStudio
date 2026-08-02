@@ -33,3 +33,9 @@ WINDOW-/TASKLEISTENKORREKTUR (2. AUGUST 2026)
 - Das Hauptfenster wird beim Minimieren nicht mehr versteckt oder in den Infobereich verschoben.
 - Es bleibt als normale Windows-Schaltfläche in der Taskleiste sichtbar und kann von dort wiederhergestellt oder maximiert werden.
 - Die nicht mehr benötigte Tray-Icon-Implementierung wurde aus dem Frontend entfernt.
+
+GITHUB-RELEASE UND DESKTOPVERKNÜPFUNG (2. AUGUST 2026)
+- Der Workflow kann nach erfolgreichen Build-, Bundle- und MSI-Tests manuell einen passenden Versions-Tag erzeugen und das GitHub Release veröffentlichen oder aktualisieren.
+- Der Release-Tag muss exakt zur PRODUCT_VERSION passen; für diese Version ist ausschließlich v3.8.8 zulässig.
+- Der WiX-Installer legt automatisch AstroFocus Studio.lnk auf dem öffentlichen Windows-Desktop an.
+- Bundle- und MSI-Smoke-Tests prüfen Ziel und Arbeitsverzeichnis der Verknüpfung sowie ihre Entfernung bei der Deinstallation.

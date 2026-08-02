@@ -17,6 +17,11 @@ $ArtifactRoot = Join-Path $RepositoryRoot 'artifacts'
 $PayloadRoot = Join-Path $ArtifactRoot 'payload'
 $LogRoot = Join-Path $ArtifactRoot 'test-logs'
 $InstallRoot = Join-Path $env:ProgramFiles 'AstroFocus Studio'
+$CommonDesktopRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::CommonDesktopDirectory)
+if ([string]::IsNullOrWhiteSpace($CommonDesktopRoot)) {
+    throw 'Der gemeinsame Windows-Desktoppfad konnte nicht ermittelt werden.'
+}
+$DesktopShortcutPath = Join-Path $CommonDesktopRoot 'AstroFocus Studio.lnk'
 $BundlePath = Join-Path $DistRoot "AstroFocusStudio-$ProductVersion-Setup.exe"
 $MsiPath = Join-Path $DistRoot "AstroFocusStudio-$ProductVersion-x64.msi"
 $MsiExecPath = Join-Path $env:SystemRoot 'System32\msiexec.exe'
@@ -145,6 +150,38 @@ function Assert-InstalledPayload {
     Write-SmokeLog 'PASS: installed payload and hashes'
 }
 
+function Assert-DesktopShortcut {
+    Write-SmokeLog 'VERIFY: common desktop shortcut'
+    if (-not (Test-Path -LiteralPath $DesktopShortcutPath -PathType Leaf)) {
+        throw "Desktopverknüpfung fehlt: $DesktopShortcutPath"
+    }
+
+    $expectedTarget = [IO.Path]::GetFullPath((Join-Path $InstallRoot 'AstroFocusStudio.exe'))
+    $expectedWorkingDirectory = [IO.Path]::GetFullPath($InstallRoot)
+    $shell = $null
+    $shortcut = $null
+    try {
+        $shell = New-Object -ComObject WScript.Shell
+        $shortcut = $shell.CreateShortcut($DesktopShortcutPath)
+        $actualTarget = [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables([string]$shortcut.TargetPath))
+        $actualWorkingDirectory = [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables([string]$shortcut.WorkingDirectory))
+        if (-not $actualTarget.Equals($expectedTarget, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Desktopverknüpfung verweist auf ein falsches Ziel: $actualTarget"
+        }
+        if (-not $actualWorkingDirectory.Equals($expectedWorkingDirectory, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Desktopverknüpfung besitzt ein falsches Arbeitsverzeichnis: $actualWorkingDirectory"
+        }
+    } finally {
+        if ($null -ne $shortcut) {
+            [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shortcut)
+        }
+        if ($null -ne $shell) {
+            [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell)
+        }
+    }
+    Write-SmokeLog 'PASS: common desktop shortcut target and working directory'
+}
+
 function Assert-Uninstalled {
     Write-SmokeLog 'VERIFY: installation directory removed'
     if (Test-Path -LiteralPath $InstallRoot) {
@@ -154,7 +191,15 @@ function Assert-Uninstalled {
         }
         Remove-Item -LiteralPath $InstallRoot -Force -ErrorAction SilentlyContinue
     }
-    Write-SmokeLog 'PASS: product removed'
+    $shortcutDeadline = [DateTime]::UtcNow.AddSeconds(5)
+    while ((Test-Path -LiteralPath $DesktopShortcutPath -PathType Leaf) -and
+           [DateTime]::UtcNow -lt $shortcutDeadline) {
+        Start-Sleep -Milliseconds 200
+    }
+    if (Test-Path -LiteralPath $DesktopShortcutPath -PathType Leaf) {
+        throw "Nach der Deinstallation ist die Desktopverknüpfung noch vorhanden: $DesktopShortcutPath"
+    }
+    Write-SmokeLog 'PASS: product and desktop shortcut removed'
 }
 
 function Invoke-HealthCheck {
@@ -251,6 +296,7 @@ try {
         # This mode runs on its own clean GitHub-hosted Windows runner.
         Invoke-InstallerProcess -FilePath $BundlePath -Arguments @('/quiet', '/norestart', '/log', $bundleInstallLog) -Description 'Bundle-Installation' -TimeoutSeconds 180
         Assert-InstalledPayload
+        Assert-DesktopShortcut
         Invoke-HealthCheck
 
         $repairProbe = Join-Path $InstallRoot 'AstroFocusFocuserHost.exe'
@@ -260,6 +306,7 @@ try {
         }
         Invoke-InstallerProcess -FilePath $BundlePath -Arguments @('/repair', '/quiet', '/norestart', '/log', $bundleRepairLog) -Description 'Bundle-Reparatur' -TimeoutSeconds 180
         Assert-InstalledPayload
+        Assert-DesktopShortcut
 
         Invoke-InstallerProcess -FilePath $BundlePath -Arguments @('/uninstall', '/quiet', '/norestart', '/log', $bundleUninstallLog) -Description 'Bundle-Deinstallation' -TimeoutSeconds 180
         Assert-Uninstalled
@@ -272,6 +319,7 @@ try {
         # the bundle itself returns exit code 0.
         Invoke-InstallerProcess -FilePath $MsiExecPath -Arguments @('/i', $MsiPath, '/qn', '/norestart', '/L*V!', $msiInstallLog, 'REBOOT=ReallySuppress') -Description 'MSI-Installation' -ExpectedLogPath $msiInstallLog -TimeoutSeconds 180
         Assert-InstalledPayload
+        Assert-DesktopShortcut
         Invoke-HealthCheck
 
         $repairProbe = Join-Path $InstallRoot 'AstroFocusFocuserHost.exe'
@@ -282,6 +330,7 @@ try {
         $msiRepairLog = Join-Path $LogRoot 'msi-repair.log'
         Invoke-InstallerProcess -FilePath $MsiExecPath -Arguments @('/fa', $MsiPath, '/qn', '/norestart', '/L*V!', $msiRepairLog, 'REBOOT=ReallySuppress') -Description 'MSI-Reparatur' -ExpectedLogPath $msiRepairLog -TimeoutSeconds 180
         Assert-InstalledPayload
+        Assert-DesktopShortcut
 
         Invoke-InstallerProcess -FilePath $MsiExecPath -Arguments @('/x', $MsiPath, '/qn', '/norestart', '/L*V!', $msiUninstallLog, 'REBOOT=ReallySuppress') -Description 'MSI-Deinstallation' -ExpectedLogPath $msiUninstallLog -TimeoutSeconds 180
         Assert-Uninstalled

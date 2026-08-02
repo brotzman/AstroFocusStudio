@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Static contract checks for the GitHub Actions and WiX packaging files."""
 from __future__ import annotations
 
@@ -191,6 +191,23 @@ check("Installer-Test-Input" in workflow, "test jobs consume the exact packages 
 check("needs: [windows-build, bundle-test, msi-test]" in workflow, "tagged release waits for both installer test jobs")
 check("[ValidateSet('Bundle', 'Msi')]" in installer_test, "installer test script prevents mixed transaction modes")
 check("'/fa'" in installer_test and "MSI-Reparatur" in installer_test, "raw MSI repair is tested independently")
+
+check("publish_release:" in workflow and "type: boolean" in workflow, "manual workflow dispatch can opt in to publishing a release")
+check("release_tag:" in workflow and "default: 'v3.8.8'" in workflow, "manual release dispatch provides the version tag")
+check("inputs.publish_release == true" in workflow, "release job is gated by the manual publish switch")
+check('expected_tag="v${PRODUCT_VERSION}"' in workflow, "release tag must match the built product version")
+check('--target "$GITHUB_SHA"' in workflow, "manual publishing creates a missing tag at the tested commit")
+check('gh release upload "$RELEASE_TAG" release-files/* --clobber' in workflow, "existing releases are updated without duplicating assets")
+
+check('StandardDirectory Id="CommonDesktopFolder"' in package, "WiX package installs the shortcut on the common desktop")
+check('Component Id="CmpDesktopShortcut"' in package, "desktop shortcut has its own repairable MSI component")
+check('Id="DesktopShortcutLink"' in package and 'Name="AstroFocus Studio"' in package, "desktop shortcut has the expected name")
+check('Target="[INSTALLFOLDER]AstroFocusStudio.exe"' in package, "desktop shortcut targets the main executable")
+check('WorkingDirectory="INSTALLFOLDER"' in package, "desktop shortcut uses the installation folder as working directory")
+check('<ComponentRef Id="CmpDesktopShortcut" />' in package, "desktop shortcut component is included in the main feature")
+check('CommonDesktopDirectory' in installer_test and 'AstroFocus Studio.lnk' in installer_test, "installer tests resolve the public desktop shortcut")
+check('WScript.Shell' in installer_test and 'TargetPath' in installer_test, "installer tests validate the desktop shortcut target")
+check('Nach der Deinstallation ist die Desktopverknüpfung noch vorhanden' in installer_test, "installer tests require desktop shortcut removal")
 
 print(f"GitHub/WiX contract tests: {passed}/{total}")
 sys.exit(0 if passed == total else 1)
