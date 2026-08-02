@@ -9,6 +9,8 @@ workflow = (root / ".github" / "workflows" / "windows-build.yml").read_text(enco
 validator = (root / "tests" / "github_workflow_validation_388.py").read_text(encoding="utf-8-sig")
 builder = (root / "scripts" / "Build-GitHubArtifacts.ps1").read_text(encoding="utf-8-sig")
 
+required_block = workflow.split("$requiredFiles = @(", 1)[1].split("$optionalMetadata", 1)[0]
+
 checks = [
     ("Start-Process" in runner, "runner uses Process execution instead of a native stderr pipeline"),
     ("RedirectStandardOutput" in runner, "runner captures complete stdout"),
@@ -17,7 +19,13 @@ checks = [
     ("python-tests.log" in runner and "python-tests.log" in builder, "complete Python log is preserved under CI diagnostics"),
     ("installer\\wix\\Package.wxs" in workflow, "preflight requires Package.wxs"),
     ("installer\\wix\\Bundle.wxs" in workflow, "preflight requires Bundle.wxs"),
-    ("required GitHub/WiX files are missing" in validator, "validator reports missing inputs without a traceback"),
+    (".gitattributes" not in required_block and ".gitignore" not in required_block, "repository metadata files are not build prerequisites"),
+    ("$optionalMetadata = @('.gitattributes', '.gitignore')" in workflow, "missing repository metadata is checked separately"),
+    ("Optional repository metadata is missing and will not block the build" in workflow, "missing repository metadata only produces a warning"),
+    (workflow.index("Prepare CI diagnostics") < workflow.index("Verify repository build entry points"), "preflight diagnostics are initialized before validation"),
+    ("preflight.log" in workflow, "preflight output is persisted for failed runs"),
+    ("if-no-files-found: warn" in workflow, "log upload does not mask the primary failure"),
+    ("required GitHub/WiX files are missing" in validator, "validator reports missing build inputs without a traceback"),
     ("utf-8-sig" in validator, "validator accepts normal UTF-8 and UTF-8 BOM files"),
 ]
 

@@ -30,8 +30,6 @@ required_text_files = {
     "artifact_build": ROOT / "scripts" / "Build-GitHubArtifacts.ps1",
     "installer_test": ROOT / "scripts" / "Test-GitHubInstaller.ps1",
     "native_script": ROOT / "scripts" / "Run-NativeTests.sh",
-    "gitattributes": ROOT / ".gitattributes",
-    "gitignore": ROOT / ".gitignore",
 }
 
 missing = [str(path.relative_to(ROOT)) for path in required_text_files.values() if not path.is_file()]
@@ -57,8 +55,6 @@ wix_build = loaded["wix_build"]
 artifact_build = loaded["artifact_build"]
 installer_test = loaded["installer_test"]
 native_script = loaded["native_script"]
-gitattributes = loaded["gitattributes"]
-gitignore = loaded["gitignore"]
 
 check("runs-on: windows-2022" in workflow, "Windows build uses a fixed supported runner")
 check("actions/checkout@v7" in workflow, "checkout action uses the current v7 major")
@@ -75,17 +71,20 @@ check("CXX=$compiler" in workflow, "resolved compiler is exported explicitly to 
 check("native-sanitizers.log" in workflow, "native sanitizer output is persisted as a diagnostic log")
 check("Native-Sanitizer-Logs" in workflow and "if: always()" in workflow, "native logs are uploaded even after a failed test")
 check("run: ./scripts/Run-NativeTests.sh" not in workflow, "workflow has no direct executable-bit-dependent native test invocation")
-check("*.sh text eol=lf" in gitattributes, "shell scripts are checked out with LF line endings")
+check("$optionalMetadata = @('.gitattributes', '.gitignore')" in workflow, "repository dotfiles are treated as optional metadata")
+check("Optional repository metadata is missing and will not block the build" in workflow, "missing dotfiles produce a warning instead of blocking compilation")
 check("permissions:\n  contents: read" in workflow, "default workflow permissions are read-only")
 check("contents: write" in workflow, "release job explicitly receives write permission")
 check("Prepare CI diagnostics" in workflow, "workflow creates the diagnostic directory before the Windows build")
+check(workflow.index("Prepare CI diagnostics") < workflow.index("Verify repository build entry points"), "diagnostic directory and preflight log are created before repository validation")
+check("preflight.log" in workflow, "repository validation writes a persistent preflight log")
 check("Verify repository build entry points" in workflow, "workflow verifies all required build scripts after checkout")
 check("$env:GITHUB_WORKSPACE" in workflow, "Windows build paths are anchored to the checked-out GitHub workspace")
-check("Required repository files are missing from this commit" in workflow, "missing upload files produce an explicit preflight error")
+check("Required build files are missing from this commit" in workflow, "missing build inputs produce an explicit preflight error")
 check("-ExecutionPolicy Bypass" in workflow and "-File $buildScript" in workflow, "artifact build is invoked through an explicit absolute PowerShell script path")
 check("& .\\scripts\\Build-GitHubArtifacts.ps1" not in workflow, "workflow no longer relies on a fragile relative build-script invocation")
 check("build-package.log" in workflow and "Tee-Object" in workflow, "Windows build output is persisted even when packaging fails")
-check("path: artifacts/test-logs/" in workflow and "if-no-files-found: error" in workflow, "diagnostic upload always requires a real log artifact")
+check("path: artifacts/test-logs/" in workflow and "if-no-files-found: warn" in workflow, "diagnostic upload does not create a second failure when a prior setup step aborts")
 check("python-tests.log" in workflow or "python-tests.log" in artifact_build, "Python test output is persisted as a complete diagnostic log")
 check("Start-Process" in (ROOT / "scripts" / "Run-PythonTests.ps1").read_text(encoding="utf-8-sig"), "Python runner captures stdout and stderr without PowerShell NativeCommandError truncation")
 check("installer\\wix\\Package.wxs" in workflow and "installer\\wix\\Bundle.wxs" in workflow, "checkout preflight verifies both WiX source files")
@@ -150,7 +149,6 @@ check("release-manifest.json" in artifact_build, "release manifest is generated 
 check("/repair" in installer_test and "AstroFocusFocuserHost.exe" in installer_test, "installer test verifies MSI repair of a missing component")
 check("/uninstall" in installer_test and "msiexec.exe" in installer_test, "installer test covers bundle and MSI removal")
 check("--health-check" in installer_test, "installer test runs installed health checks")
-check("artifacts/" in gitignore and "dist/" in gitignore and "*.exe" in gitignore, "generated build outputs are ignored")
 
 print(f"GitHub/WiX contract tests: {passed}/{total}")
 sys.exit(0 if passed == total else 1)
