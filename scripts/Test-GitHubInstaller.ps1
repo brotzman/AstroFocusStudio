@@ -19,6 +19,7 @@ $LogRoot = Join-Path $ArtifactRoot 'test-logs'
 $InstallRoot = Join-Path $env:ProgramFiles 'AstroFocus Studio'
 $BundlePath = Join-Path $DistRoot "AstroFocusStudio-$ProductVersion-Setup.exe"
 $MsiPath = Join-Path $DistRoot "AstroFocusStudio-$ProductVersion-x64.msi"
+$MsiExecPath = Join-Path $env:SystemRoot 'System32\msiexec.exe'
 $ManifestPath = Join-Path $PayloadRoot 'release-manifest.json'
 $SmokeLog = Join-Path $LogRoot 'installer-smoke.log'
 
@@ -30,9 +31,18 @@ function Write-SmokeLog([string]$Message) {
     $line | Tee-Object -FilePath $SmokeLog -Append | Write-Host
 }
 
-function Quote-NativeArgument([string]$Value) {
+function Format-NativeArgument([string]$Value) {
     if ($null -eq $Value) { return '""' }
-    return '"' + $Value.Replace('"', '\"') + '"'
+    if ($Value.Contains('"')) {
+        throw 'Native Prozessargumente dürfen keine eingebetteten Anführungszeichen enthalten.'
+    }
+
+    # Command switches must remain unquoted. Quoting every token turns /i, /qn and
+    # /L*V! into "/i", "/qn" and "/L*V!". msiexec can interpret that as an
+    # invalid command line and wait on a hidden usage dialog without creating a log.
+    # Quote only values containing whitespace, notably file-system paths.
+    if ($Value -notmatch '\s') { return $Value }
+    return '"' + $Value + '"'
 }
 
 function Stop-ProcessTree([int]$ProcessId) {
@@ -50,10 +60,12 @@ function Invoke-InstallerProcess {
         [Parameter(Mandatory = $true)][string[]]$Arguments,
         [Parameter(Mandatory = $true)][string]$Description,
         [int[]]$SuccessExitCodes = @(0, 1641, 3010),
-        [ValidateRange(1, 900)][int]$TimeoutSeconds = 180
+        [ValidateRange(1, 900)][int]$TimeoutSeconds = 180,
+        [string]$ExpectedLogPath = '',
+        [ValidateRange(1, 60)][int]$StartupLogTimeoutSeconds = 15
     )
 
-    $argumentLine = ($Arguments | ForEach-Object { Quote-NativeArgument $_ }) -join ' '
+    $argumentLine = ($Arguments | ForEach-Object { Format-NativeArgument $_ }) -join ' '
     Write-SmokeLog "START: $Description"
     Write-SmokeLog "COMMAND: $FilePath $argumentLine"
     Write-SmokeLog "TIMEOUT: $TimeoutSeconds seconds"
@@ -72,6 +84,22 @@ function Invoke-InstallerProcess {
             throw "$Description konnte nicht gestartet werden."
         }
         Write-SmokeLog "PID: $($process.Id)"
+
+        if (-not [string]::IsNullOrWhiteSpace($ExpectedLogPath)) {
+            $logDeadline = [DateTime]::UtcNow.AddSeconds($StartupLogTimeoutSeconds)
+            while (-not $process.HasExited -and
+                   -not (Test-Path -LiteralPath $ExpectedLogPath -PathType Leaf) -and
+                   [DateTime]::UtcNow -lt $logDeadline) {
+                Start-Sleep -Milliseconds 200
+            }
+            if (-not $process.HasExited -and
+                -not (Test-Path -LiteralPath $ExpectedLogPath -PathType Leaf)) {
+                Write-SmokeLog "NO LOG: $Description did not create $ExpectedLogPath within $StartupLogTimeoutSeconds seconds."
+                $childProcessId = $process.Id
+                Stop-ProcessTree -ProcessId $childProcessId
+                throw "$Description hat kein Windows-Installer-Protokoll angelegt. Die msiexec-Befehlszeile wurde wahrscheinlich nicht akzeptiert. Details: $SmokeLog"
+            }
+        }
 
         # Deliberately wait only for the direct process handle. Start-Process -Wait can
         # wait for an entire descendant tree and may never return after Burn/MSI work.
@@ -192,9 +220,10 @@ function Invoke-CleanupUninstall {
     if (-not (Test-Path -LiteralPath $InstallRoot)) { return }
     try {
         Invoke-InstallerProcess `
-            -FilePath 'msiexec.exe' `
-            -Arguments @('/x', $MsiPath, '/qn', '/norestart', '/l*v', (Join-Path $LogRoot 'cleanup-msi-uninstall.log')) `
+            -FilePath $MsiExecPath `
+            -Arguments @('/x', $MsiPath, '/qn', '/norestart', '/L*V!', (Join-Path $LogRoot 'cleanup-msi-uninstall.log'), 'REBOOT=ReallySuppress') `
             -Description 'Bereinigungs-MSI-Deinstallation' `
+            -ExpectedLogPath (Join-Path $LogRoot 'cleanup-msi-uninstall.log') `
             -SuccessExitCodes @(0, 1605, 1614, 1641, 3010) `
             -TimeoutSeconds 90
     } catch {
@@ -241,7 +270,7 @@ try {
         # Never run this immediately after a Burn transaction on the same Windows VM:
         # Burn can leave Windows Installer restart/transaction state behind even when
         # the bundle itself returns exit code 0.
-        Invoke-InstallerProcess -FilePath 'msiexec.exe' -Arguments @('/i', $MsiPath, '/qn', '/norestart', '/l*v', $msiInstallLog) -Description 'MSI-Installation' -TimeoutSeconds 180
+        Invoke-InstallerProcess -FilePath $MsiExecPath -Arguments @('/i', $MsiPath, '/qn', '/norestart', '/L*V!', $msiInstallLog, 'REBOOT=ReallySuppress') -Description 'MSI-Installation' -ExpectedLogPath $msiInstallLog -TimeoutSeconds 180
         Assert-InstalledPayload
         Invoke-HealthCheck
 
@@ -251,10 +280,10 @@ try {
             throw 'Die MSI-Reparatur-Testdatei konnte nicht entfernt werden.'
         }
         $msiRepairLog = Join-Path $LogRoot 'msi-repair.log'
-        Invoke-InstallerProcess -FilePath 'msiexec.exe' -Arguments @('/fa', $MsiPath, '/qn', '/norestart', '/l*v', $msiRepairLog) -Description 'MSI-Reparatur' -TimeoutSeconds 180
+        Invoke-InstallerProcess -FilePath $MsiExecPath -Arguments @('/fa', $MsiPath, '/qn', '/norestart', '/L*V!', $msiRepairLog, 'REBOOT=ReallySuppress') -Description 'MSI-Reparatur' -ExpectedLogPath $msiRepairLog -TimeoutSeconds 180
         Assert-InstalledPayload
 
-        Invoke-InstallerProcess -FilePath 'msiexec.exe' -Arguments @('/x', $MsiPath, '/qn', '/norestart', '/l*v', $msiUninstallLog) -Description 'MSI-Deinstallation' -TimeoutSeconds 180
+        Invoke-InstallerProcess -FilePath $MsiExecPath -Arguments @('/x', $MsiPath, '/qn', '/norestart', '/L*V!', $msiUninstallLog, 'REBOOT=ReallySuppress') -Description 'MSI-Deinstallation' -ExpectedLogPath $msiUninstallLog -TimeoutSeconds 180
         Assert-Uninstalled
         Write-SmokeLog 'PASS: MSI install, repair, health checks and uninstall'
         Write-Host 'MSI-Installation, Reparatur, Health-Checks und Deinstallation wurden bestanden.'
