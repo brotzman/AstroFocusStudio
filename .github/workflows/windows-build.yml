@@ -123,8 +123,13 @@ jobs:
             'scripts\Run-PythonTests.ps1',
             'scripts\Test-GitHubInstaller.ps1',
             'scripts\Run-NativeTests.sh',
+            'tests\github_workflow_validation_388.py',
             'build-all-windows-x64.bat',
-            'installer\build-wix.ps1'
+            'installer\build-wix.ps1',
+            'installer\wix\Package.wxs',
+            'installer\wix\Bundle.wxs',
+            '.gitattributes',
+            '.gitignore'
           )
           $missingFiles = @()
           foreach ($relativePath in $requiredFiles) {
