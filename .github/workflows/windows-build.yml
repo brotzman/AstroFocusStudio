@@ -79,10 +79,10 @@ jobs:
           retention-days: 14
 
   windows-build:
-    name: Build, package and install on Windows
+    name: Build Windows binaries and packages
     needs: native-tests
     runs-on: windows-2022
-    timeout-minutes: 45
+    timeout-minutes: 25
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -213,9 +213,17 @@ jobs:
             throw
           }
 
-      - name: Install, repair and uninstall setup packages
+      - name: Stage isolated installer-test package
         shell: powershell
-        run: .\scripts\Test-GitHubInstaller.ps1 -ProductVersion $env:PRODUCT_VERSION
+        run: |
+          $repositoryRoot = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE)
+          $ciRoot = Join-Path $repositoryRoot 'artifacts\ci-package'
+          Remove-Item -LiteralPath $ciRoot -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force `
+            -Path (Join-Path $ciRoot 'dist'), (Join-Path $ciRoot 'artifacts\payload') | Out-Null
+          Copy-Item -Path (Join-Path $repositoryRoot 'dist\*') -Destination (Join-Path $ciRoot 'dist') -Force
+          Copy-Item -LiteralPath (Join-Path $repositoryRoot 'artifacts\payload\release-manifest.json') `
+            -Destination (Join-Path $ciRoot 'artifacts\payload\release-manifest.json') -Force
 
       - name: Upload Windows release files
         uses: actions/upload-artifact@v7
@@ -226,19 +234,94 @@ jobs:
           retention-days: 30
           compression-level: 0
 
-      - name: Upload installer test logs
+      - name: Upload isolated installer-test package
+        uses: actions/upload-artifact@v7
+        with:
+          name: AstroFocusStudio-${{ env.PRODUCT_VERSION }}-Installer-Test-Input
+          path: artifacts/ci-package/
+          if-no-files-found: error
+          retention-days: 2
+          compression-level: 0
+
+      - name: Upload build diagnostics
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: AstroFocusStudio-${{ env.PRODUCT_VERSION }}-Installer-Logs
+          name: AstroFocusStudio-${{ env.PRODUCT_VERSION }}-Build-Logs
           path: artifacts/test-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+  bundle-test:
+    name: Test Burn bundle on clean Windows runner
+    needs: windows-build
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - name: Check out test script
+        uses: actions/checkout@v7
+
+      - name: Download installer-test input
+        uses: actions/download-artifact@v8
+        with:
+          name: AstroFocusStudio-${{ env.PRODUCT_VERSION }}-Installer-Test-Input
+          path: ci-input
+
+      - name: Install, repair and uninstall Burn bundle
+        shell: powershell
+        run: |
+          $testRoot = Join-Path $env:GITHUB_WORKSPACE 'ci-input'
+          .\scripts\Test-GitHubInstaller.ps1 `
+            -ProductVersion $env:PRODUCT_VERSION `
+            -Mode Bundle `
+            -RepositoryRoot $testRoot
+
+      - name: Upload Burn bundle test logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: AstroFocusStudio-${{ env.PRODUCT_VERSION }}-Bundle-Test-Logs
+          path: ci-input/artifacts/test-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+  msi-test:
+    name: Test raw MSI on clean Windows runner
+    needs: windows-build
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - name: Check out test script
+        uses: actions/checkout@v7
+
+      - name: Download installer-test input
+        uses: actions/download-artifact@v8
+        with:
+          name: AstroFocusStudio-${{ env.PRODUCT_VERSION }}-Installer-Test-Input
+          path: ci-input
+
+      - name: Install, repair and uninstall raw MSI
+        shell: powershell
+        run: |
+          $testRoot = Join-Path $env:GITHUB_WORKSPACE 'ci-input'
+          .\scripts\Test-GitHubInstaller.ps1 `
+            -ProductVersion $env:PRODUCT_VERSION `
+            -Mode Msi `
+            -RepositoryRoot $testRoot
+
+      - name: Upload raw MSI test logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: AstroFocusStudio-${{ env.PRODUCT_VERSION }}-MSI-Test-Logs
+          path: ci-input/artifacts/test-logs/
           if-no-files-found: warn
           retention-days: 14
 
   release:
     name: Publish tagged release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: windows-build
+    needs: [windows-build, bundle-test, msi-test]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
