@@ -8,7 +8,7 @@ Ein abweichender Tag wird abgelehnt, damit ein 3.8.8-Paket nicht versehentlich u
 
 ## Desktopverknüpfung
 
-`installer/wix/Package.wxs` enthält eine eigene MSI-Komponente im `CommonDesktopFolder`. Dadurch wird `AstroFocus Studio.lnk` für alle Benutzer auf dem öffentlichen Desktop angelegt. Die Verknüpfung zeigt auf `[INSTALLFOLDER]AstroFocusStudio.exe`, nutzt den Installationsordner als Arbeitsverzeichnis und übernimmt das Programmsymbol.
+`installer/wix/Package.wxs` enthält eine eigene MSI-Komponente im WiX-5-konformen `DesktopFolder`. Da das Paket mit `Scope="perMachine"` installiert wird, leitet Windows Installer diesen Ordner auf den All-Users-/öffentlichen Desktop um. Dadurch wird `AstroFocus Studio.lnk` für alle Benutzer angelegt. Die Verknüpfung zeigt auf `[INSTALLFOLDER]AstroFocusStudio.exe`, nutzt den Installationsordner als Arbeitsverzeichnis und übernimmt das Programmsymbol.
 
 Die separaten Burn- und MSI-Smoke-Tests kontrollieren nach Installation und Reparatur:
 

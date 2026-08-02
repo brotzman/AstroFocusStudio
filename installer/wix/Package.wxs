@@ -67,7 +67,7 @@
       </Directory>
     </StandardDirectory>
 
-    <StandardDirectory Id="CommonDesktopFolder">
+    <StandardDirectory Id="DesktopFolder">
       <Component Id="CmpDesktopShortcut" Guid="*" Bitness="always64">
         <Shortcut
             Id="DesktopShortcutLink"

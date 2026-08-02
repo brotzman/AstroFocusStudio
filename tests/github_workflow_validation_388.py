@@ -199,7 +199,8 @@ check('expected_tag="v${PRODUCT_VERSION}"' in workflow, "release tag must match 
 check('--target "$GITHUB_SHA"' in workflow, "manual publishing creates a missing tag at the tested commit")
 check('gh release upload "$RELEASE_TAG" release-files/* --clobber' in workflow, "existing releases are updated without duplicating assets")
 
-check('StandardDirectory Id="CommonDesktopFolder"' in package, "WiX package installs the shortcut on the common desktop")
+check('StandardDirectory Id="DesktopFolder"' in package and 'Scope="perMachine"' in package, "WiX package uses DesktopFolder in per-machine context for the public desktop")
+check('CommonDesktopFolder' not in package, "WiX package avoids unsupported CommonDesktopFolder in WiX 5")
 check('Component Id="CmpDesktopShortcut"' in package, "desktop shortcut has its own repairable MSI component")
 check('Id="DesktopShortcutLink"' in package and 'Name="AstroFocus Studio"' in package, "desktop shortcut has the expected name")
 check('Target="[INSTALLFOLDER]AstroFocusStudio.exe"' in package, "desktop shortcut targets the main executable")
