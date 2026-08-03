@@ -166,6 +166,7 @@ jobs:
             'tests\continuous_focus_validation_390.py',
             'tests\continuous_focus_layout_validation_390.py',
             'tests\frontend_startup_resilience_validation_390.py',
+            'tests\frontend_settings_persistence_validation_390.py',
             'tests\continuous_focus_logic_validation_390.cpp',
             'build-all-windows-x64.bat',
             'frontend\build-windows-x64.bat',
