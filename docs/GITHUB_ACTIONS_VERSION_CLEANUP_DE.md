@@ -19,3 +19,10 @@ git add -A
 git commit -m "Remove superseded 3.8.8 version files"
 git push
 ```
+
+## Generierte Prüfsummendateien
+
+`SHA256SUMS.txt`, `SOURCE_SHA256SUMS.txt` und `release-manifest.json` gehören nicht
+in das Repository-Hauptverzeichnis. Sie werden beim Paketbau neu erzeugt. Die
+Bereinigung entfernt versehentlich eingecheckte Root-Kopien vor der
+Versionsprüfung, damit alte Artefaktnamen keinen 3.9.0-Build blockieren.

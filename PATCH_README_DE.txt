@@ -1,14 +1,24 @@
-AstroFocus Studio 3.9.0 – Patch für supersedierte Versionsdateien
+AstroFocus Studio 3.9.0 – Patch für veraltete Root-Prüfsummen
 
-1. Den Inhalt dieses ZIPs in das Hauptverzeichnis des bestehenden
-   3.9.0-Repositorys kopieren und vorhandene Dateien ersetzen.
-2. Cleanup-Legacy-Version-Files.cmd ausführen.
-3. Danach im Repository ausführen:
+Ursache:
+Eine alte, bereits eingecheckte SHA256SUMS.txt aus Version 3.8.8 wurde vom
+Versionskonsistenztest gefunden. Diese Datei ist ein generiertes Release-Artefakt
+und gehört nicht in den Repository-Stamm.
+
+Anwendung:
+1. Den Inhalt dieses ZIPs in das Hauptverzeichnis des Repositorys kopieren.
+2. Vorhandene Dateien ersetzen.
+3. Cleanup-Legacy-Version-Files.cmd ausführen.
+4. Danach unbedingt ausführen:
 
    git add -A
-   git commit -m "Remove superseded version files"
+   git commit -m "Remove stale generated checksum artifacts"
    git push
 
-Wichtig: git add -A zeichnet auch die Löschung umbenannter Vorgängerdateien auf.
-Der GitHub-Workflow bereinigt diese exakt bekannten Altdateien zusätzlich in
-seinem temporären Arbeitsverzeichnis und führt nur die aktuelle Testsuite aus.
+Die Bereinigung entfernt im Repository-Stamm nur diese explizit erlaubten
+generierten Dateien:
+- SHA256SUMS.txt
+- SOURCE_SHA256SUMS.txt
+- release-manifest.json
+
+Die beim Build unter dist erzeugten aktuellen 3.9.0-Dateien werden nicht entfernt.

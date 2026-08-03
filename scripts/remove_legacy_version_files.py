@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Remove only superseded AstroFocus Studio 3.8.8 versioned files.
+"""Remove superseded 3.8.8 files and generated root artifacts.
 
 This is intentionally an allow-list cleanup. It never searches for and deletes
-arbitrary files containing an old version string.
+arbitrary files containing an old version string. Generated integrity files are
+removed only from the repository root because canonical copies are created in
+``dist`` during packaging and must not be committed as source files.
 """
 from __future__ import annotations
 
@@ -15,6 +17,13 @@ CURRENT_MARKERS = (
     Path("RELEASE_NOTES_3_9_0.txt"),
     Path("tests/version_consistency_validation_390.py"),
 )
+
+GENERATED_ROOT_FILES = (
+    Path("SHA256SUMS.txt"),
+    Path("SOURCE_SHA256SUMS.txt"),
+    Path("release-manifest.json"),
+)
+
 
 LEGACY_FILES = (
     Path("FIXES_3_8_8_REVISION.txt"),
@@ -72,20 +81,28 @@ def main() -> int:
         print("\n".join(lines), file=sys.stderr)
         return 2
 
-    existing = [path for path in LEGACY_FILES if (root / path).is_file()]
+    existing_legacy = [path for path in LEGACY_FILES if (root / path).is_file()]
+    existing_generated = [path for path in GENERATED_ROOT_FILES if (root / path).is_file()]
     if args.check_only:
-        if existing:
+        failed = False
+        if existing_legacy:
+            failed = True
             lines.append("ERROR: superseded 3.8.8 files are still present:")
-            lines.extend(f"  - {path}" for path in existing)
+            lines.extend(f"  - {path}" for path in existing_legacy)
+        if existing_generated:
+            failed = True
+            lines.append("ERROR: generated root artifacts are still present:")
+            lines.extend(f"  - {path}" for path in existing_generated)
+        if failed:
             _write_log(args.log, root, lines)
             print("\n".join(lines), file=sys.stderr)
             return 1
-        lines.append("PASS: no superseded 3.8.8 versioned files are present.")
+        lines.append("PASS: no superseded files or generated root artifacts are present.")
         _write_log(args.log, root, lines)
         print("\n".join(lines))
         return 0
 
-    for relative in LEGACY_FILES:
+    for relative in LEGACY_FILES + GENERATED_ROOT_FILES:
         candidate = (root / relative).resolve()
         try:
             candidate.relative_to(root)
@@ -98,15 +115,20 @@ def main() -> int:
             candidate.unlink()
             lines.append(f"REMOVED: {relative}")
 
-    remaining = [str(path) for path in LEGACY_FILES if (root / path).exists()]
+    remaining = [
+        str(path)
+        for path in LEGACY_FILES + GENERATED_ROOT_FILES
+        if (root / path).exists()
+    ]
     if remaining:
-        lines.append("ERROR: legacy files could not be removed:")
+        lines.append("ERROR: allow-listed files could not be removed:")
         lines.extend(f"  - {path}" for path in remaining)
         _write_log(args.log, root, lines)
         print("\n".join(lines), file=sys.stderr)
         return 4
 
-    lines.append(f"PASS: removed {len(existing)} superseded 3.8.8 file(s).")
+    lines.append(f"PASS: removed {len(existing_legacy)} superseded 3.8.8 file(s).")
+    lines.append(f"PASS: removed {len(existing_generated)} generated root artifact(s).")
     _write_log(args.log, root, lines)
     print("\n".join(lines))
     return 0

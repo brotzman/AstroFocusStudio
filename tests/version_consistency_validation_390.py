@@ -52,6 +52,16 @@ check("Python runner executes version consistency first", "$versionTest + $remai
 check("legacy cleanup is allow-list based", "LEGACY_FILES = (" in cleanup_script)
 check("workflow invokes legacy cleanup", "Remove superseded version files" in workflow)
 
+generated_root_artifacts = [
+    ROOT / "SHA256SUMS.txt",
+    ROOT / "SOURCE_SHA256SUMS.txt",
+    ROOT / "release-manifest.json",
+]
+check(
+    "generated integrity artifacts are not committed at repository root",
+    not any(path.exists() for path in generated_root_artifacts),
+)
+
 text_extensions = {".cpp", ".h", ".inc", ".py", ".ps1", ".bat", ".cmd", ".sh", ".md", ".txt", ".yml", ".yaml", ".json", ".wxs", ".def"}
 stale_hits: list[str] = []
 allowed_legacy_reference_paths = {
@@ -60,8 +70,14 @@ allowed_legacy_reference_paths = {
     (ROOT / "tests/legacy_version_cleanup_validation_390.py").resolve(),
     (ROOT / "docs/GITHUB_ACTIONS_VERSION_CLEANUP_DE.md").resolve(),
 }
+generated_root_artifact_paths = {path.resolve() for path in generated_root_artifacts}
 for path in ROOT.rglob("*"):
-    if path.resolve() in allowed_legacy_reference_paths or not path.is_file() or path.suffix.lower() not in text_extensions:
+    if (
+        path.resolve() in allowed_legacy_reference_paths
+        or path.resolve() in generated_root_artifact_paths
+        or not path.is_file()
+        or path.suffix.lower() not in text_extensions
+    ):
         continue
     try:
         content = path.read_text(encoding="utf-8-sig")
