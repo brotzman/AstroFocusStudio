@@ -192,17 +192,27 @@ printf 'C:/mock%s\\n' "$path"
 
         lines = [line for line in log.read_text(encoding="utf-8").splitlines() if line.strip()]
         args = [arg for line in lines for arg in line.split("\t")[1:]]
+        def is_native_windows_path(value: str) -> bool:
+            # Git Bash may invoke either the fake cygpath from PATH or its own
+            # bundled cygpath. Both are valid as long as native LLVM receives an
+            # absolute Windows path (for example C:/... or D:/...), not /c/... .
+            return bool(re.match(r"^[A-Za-z]:[\\/]", value)) or value.startswith("\\\\")
+
         bad_git_path = [arg for arg in args if "Program Files/Git" in arg]
         raw_posix_paths = [arg for arg in args if arg.startswith("/") or ":/mnt/" in arg]
         embedded_outputs = [arg for arg in args if arg.startswith(("-Fo:", "-def:", "-out:", "-implib:"))]
-        bad_embedded_outputs = [arg for arg in embedded_outputs if not arg.split(":", 1)[1].startswith("C:/mock/")]
+        bad_embedded_outputs = [
+            arg
+            for arg in embedded_outputs
+            if not is_native_windows_path(arg.split(":", 1)[1])
+        ]
         native_inputs = [
             arg
             for arg in args
             if arg.endswith((".cpp", ".s", ".obj", ".res", ".lib"))
             and not arg.startswith(("-Fo:", "-def:", "-out:", "-implib:"))
         ]
-        bad_native_inputs = [arg for arg in native_inputs if not arg.startswith("C:/mock/")]
+        bad_native_inputs = [arg for arg in native_inputs if not is_native_windows_path(arg)]
 
         problems: list[str] = []
         if bad_git_path:
