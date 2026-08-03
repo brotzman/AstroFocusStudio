@@ -5,6 +5,7 @@ notes for the current release are in `RELEASE_NOTES.txt`.
 
 ## Corrective maintenance
 
+- Accept any absolute native Windows drive path such as `C:/...` or `D:/...` in the Git Bash/MSYS argument regression test; raw MSYS paths such as `/d/a/...` remain rejected.
 - Resolve Git for Windows Bash explicitly in the MSYS argument regression test; the Windows WSL launcher (`System32\bash.exe`) and WindowsApps aliases are rejected before execution.
 - Make version consistency checks independent of Windows CRLF checkout conversion and Windows wildcard behaviour; generated headers are compared by text and versioned test filenames are detected with an explicit semantic-version pattern.
 - Pin C/C++ header files to LF in `.gitattributes` so generated version headers remain byte-stable across platforms.
