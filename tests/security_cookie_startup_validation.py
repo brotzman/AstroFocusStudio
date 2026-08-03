@@ -42,8 +42,8 @@ for source in program_sources:
 compact = " ".join(central_build.replace("\\", "/").split())
 check("security_entry.cpp" in central_build, "central build compiles the dedicated security entry")
 check("security_entry.obj" in central_build, "central build links the dedicated security entry")
-check("/GS- /c" in compact and "security_entry.cpp" in compact, "central build compiles the entry with /GS disabled")
-check("/GS /DUNICODE" in compact, "central build keeps application code protected with /GS")
+check("-GS- -c" in compact and "security_entry.cpp" in compact, "central build compiles the entry with /GS disabled")
+check("-GS -DUNICODE" in compact, "central build keeps application code protected with /GS")
 for wrapper in wrappers:
     text = wrapper.read_text(encoding="utf-8")
     rel = wrapper.relative_to(ROOT).as_posix()

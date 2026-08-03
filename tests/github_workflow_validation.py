@@ -110,6 +110,7 @@ check("common\\security_entry.cpp" in workflow, "checkout preflight verifies the
 check("common\\continuous_focus_logic.h" in workflow, "checkout preflight verifies the continuous-focus control helper")
 check("tests\\continuous_focus_logic_validation.cpp" in workflow, "checkout preflight verifies the continuous-focus native test")
 check("tests\\continuous_focus_validation.py" in workflow and "tests\\continuous_focus_layout_validation.py" in workflow, "checkout preflight verifies continuous-focus integration and layout tests")
+check("tests\\windows_bash_msys_argument_validation.py" in workflow, "checkout preflight verifies the Git Bash/MSYS argument regression test")
 
 preflight_match = re.search(
     r"\$requiredFiles\s*=\s*@\((.*?)\)\s*\n\s*\$optionalMetadata",
@@ -126,6 +127,7 @@ for relative_path in (
     r"tests\continuous_focus_logic_validation.cpp",
     r"tests\continuous_focus_validation.py",
     r"tests\continuous_focus_layout_validation.py",
+    r"tests\windows_bash_msys_argument_validation.py",
 ):
     check(
         relative_path in preflight_entries,
