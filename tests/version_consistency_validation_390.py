@@ -57,9 +57,17 @@ generated_root_artifacts = [
     ROOT / "SOURCE_SHA256SUMS.txt",
     ROOT / "release-manifest.json",
 ]
+obsolete_patch_metadata = [
+    ROOT / "PATCH_README_DE.txt",
+    ROOT / "PATCH_README.txt",
+]
 check(
     "generated integrity artifacts are not committed at repository root",
     not any(path.exists() for path in generated_root_artifacts),
+)
+check(
+    "obsolete patch metadata is not committed at repository root",
+    not any(path.exists() for path in obsolete_patch_metadata),
 )
 
 text_extensions = {".cpp", ".h", ".inc", ".py", ".ps1", ".bat", ".cmd", ".sh", ".md", ".txt", ".yml", ".yaml", ".json", ".wxs", ".def"}
@@ -70,7 +78,7 @@ allowed_legacy_reference_paths = {
     (ROOT / "tests/legacy_version_cleanup_validation_390.py").resolve(),
     (ROOT / "docs/GITHUB_ACTIONS_VERSION_CLEANUP_DE.md").resolve(),
 }
-generated_root_artifact_paths = {path.resolve() for path in generated_root_artifacts}
+generated_root_artifact_paths = {path.resolve() for path in generated_root_artifacts + obsolete_patch_metadata}
 for path in ROOT.rglob("*"):
     if (
         path.resolve() in allowed_legacy_reference_paths

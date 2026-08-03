@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Remove superseded 3.8.8 files and generated root artifacts.
+"""Remove superseded 3.8.8 files and obsolete root-only artifacts.
 
 This is intentionally an allow-list cleanup. It never searches for and deletes
 arbitrary files containing an old version string. Generated integrity files are
 removed only from the repository root because canonical copies are created in
-``dist`` during packaging and must not be committed as source files.
+``dist`` during packaging. Patch readme files are transient exchange-package
+metadata and are not part of the product documentation.
 """
 from __future__ import annotations
 
@@ -24,6 +25,10 @@ GENERATED_ROOT_FILES = (
     Path("release-manifest.json"),
 )
 
+OBSOLETE_PATCH_FILES = (
+    Path("PATCH_README_DE.txt"),
+    Path("PATCH_README.txt"),
+)
 
 LEGACY_FILES = (
     Path("FIXES_3_8_8_REVISION.txt"),
@@ -63,7 +68,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--check-only",
         action="store_true",
-        help="Report legacy files and fail instead of deleting them",
+        help="Report obsolete files and fail instead of deleting them",
     )
     return parser.parse_args()
 
@@ -83,6 +88,8 @@ def main() -> int:
 
     existing_legacy = [path for path in LEGACY_FILES if (root / path).is_file()]
     existing_generated = [path for path in GENERATED_ROOT_FILES if (root / path).is_file()]
+    existing_patch = [path for path in OBSOLETE_PATCH_FILES if (root / path).is_file()]
+
     if args.check_only:
         failed = False
         if existing_legacy:
@@ -93,16 +100,21 @@ def main() -> int:
             failed = True
             lines.append("ERROR: generated root artifacts are still present:")
             lines.extend(f"  - {path}" for path in existing_generated)
+        if existing_patch:
+            failed = True
+            lines.append("ERROR: obsolete patch metadata is still present:")
+            lines.extend(f"  - {path}" for path in existing_patch)
         if failed:
             _write_log(args.log, root, lines)
             print("\n".join(lines), file=sys.stderr)
             return 1
-        lines.append("PASS: no superseded files or generated root artifacts are present.")
+        lines.append("PASS: no superseded files, generated root artifacts, or patch metadata are present.")
         _write_log(args.log, root, lines)
         print("\n".join(lines))
         return 0
 
-    for relative in LEGACY_FILES + GENERATED_ROOT_FILES:
+    cleanup_files = LEGACY_FILES + GENERATED_ROOT_FILES + OBSOLETE_PATCH_FILES
+    for relative in cleanup_files:
         candidate = (root / relative).resolve()
         try:
             candidate.relative_to(root)
@@ -115,11 +127,7 @@ def main() -> int:
             candidate.unlink()
             lines.append(f"REMOVED: {relative}")
 
-    remaining = [
-        str(path)
-        for path in LEGACY_FILES + GENERATED_ROOT_FILES
-        if (root / path).exists()
-    ]
+    remaining = [str(path) for path in cleanup_files if (root / path).exists()]
     if remaining:
         lines.append("ERROR: allow-listed files could not be removed:")
         lines.extend(f"  - {path}" for path in remaining)
@@ -129,6 +137,7 @@ def main() -> int:
 
     lines.append(f"PASS: removed {len(existing_legacy)} superseded 3.8.8 file(s).")
     lines.append(f"PASS: removed {len(existing_generated)} generated root artifact(s).")
+    lines.append(f"PASS: removed {len(existing_patch)} obsolete patch metadata file(s).")
     _write_log(args.log, root, lines)
     print("\n".join(lines))
     return 0

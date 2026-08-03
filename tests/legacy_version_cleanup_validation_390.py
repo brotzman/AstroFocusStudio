@@ -21,9 +21,11 @@ def check(name: str, condition: bool) -> None:
 
 ast.parse(cleanup)
 check("legacy cleanup script is valid Python", True)
-check("cleanup is restricted to explicit allow-lists", "LEGACY_FILES = (" in cleanup and "GENERATED_ROOT_FILES = (" in cleanup)
+check("cleanup is restricted to explicit allow-lists", all(name in cleanup for name in ("LEGACY_FILES = (", "GENERATED_ROOT_FILES = (", "OBSOLETE_PATCH_FILES = (")))
 check("cleanup removes generated root integrity artifacts", all(name in cleanup for name in (
     "SHA256SUMS.txt", "SOURCE_SHA256SUMS.txt", "release-manifest.json")))
+check("cleanup removes obsolete patch metadata", all(name in cleanup for name in (
+    "PATCH_README_DE.txt", "PATCH_README.txt")))
 check("cleanup verifies current 3.9.0 markers", "CURRENT_MARKERS = (" in cleanup and "KNOWN_LIMITATIONS_3_9_0.txt" in cleanup)
 check("cleanup includes obsolete 3.8.8 root payloads", all(name in cleanup for name in (
     "FIXES_3_8_8_REVISION.txt", "INSTALLER_FIX_3_8_8.txt",
@@ -35,6 +37,7 @@ check("cleanup includes obsolete 3.8.8 native tests", all(name in cleanup for na
     "tests/actual_backend_validation_388.cpp")))
 check("cleanup rejects paths outside the repository", "candidate.relative_to(root)" in cleanup)
 check("cleanup checks generated artifacts in check-only mode", "generated root artifacts are still present" in cleanup)
+check("cleanup checks patch metadata in check-only mode", "obsolete patch metadata is still present" in cleanup)
 check("Python runner invokes legacy cleanup before test discovery", runner.index("remove_legacy_version_files.py") < runner.index("Get-ChildItem"))
 check("Python runner selects only 3.9.0 tests", "$currentSuffix = '_390.py'" in runner)
 check("version consistency runs before remaining tests", "$versionTest + $remainingTests" in runner)
@@ -57,7 +60,7 @@ with tempfile.TemporaryDirectory(prefix="afs390-cleanup-") as temporary:
         target = temp_root / marker
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("3.9.0\n", encoding="utf-8")
-    for generated in ("SHA256SUMS.txt", "SOURCE_SHA256SUMS.txt", "release-manifest.json"):
+    for generated in ("SHA256SUMS.txt", "SOURCE_SHA256SUMS.txt", "release-manifest.json", "PATCH_README_DE.txt", "PATCH_README.txt"):
         (temp_root / generated).write_text("3.8.8 stale generated data\n", encoding="utf-8")
     legacy = temp_root / "KNOWN_LIMITATIONS_3_8_8.txt"
     legacy.write_text("legacy\n", encoding="utf-8")
@@ -72,6 +75,11 @@ with tempfile.TemporaryDirectory(prefix="afs390-cleanup-") as temporary:
         "functional cleanup removes generated root artifacts",
         all(not (temp_root / name).exists() for name in (
             "SHA256SUMS.txt", "SOURCE_SHA256SUMS.txt", "release-manifest.json")),
+    )
+    check(
+        "functional cleanup removes obsolete patch metadata",
+        all(not (temp_root / name).exists() for name in (
+            "PATCH_README_DE.txt", "PATCH_README.txt")),
     )
     check("functional cleanup removes the legacy payload", not legacy.exists())
     check(

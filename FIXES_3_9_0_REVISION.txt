@@ -23,8 +23,9 @@ Lokale Verifikation des 3.9.0-Quellstands
 - Reproduzierbarer Doppelbuild: 7/7 SHA-256-identisch.
 - PE32+/x86-64, Zeitstempel 0, ASLR, High-Entropy-ASLR und DEP/NX: 7/7.
 - Native ASan-/UBSan-Prüfungen: 269/269.
-- Python-, Workflow-, Layout-, Installer- und Versionsprüfungen: 334/334.
-- Automatisierte Einzelprüfungen insgesamt: 603/603.
+- Python-, Workflow-, Layout-, Installer- und Versionsprüfungen: 468/468.
+- Automatisierte Einzelprüfungen insgesamt: 737/737.
 - Clang Static Analyzer für Frontend, Engine, Fokussierer-Setup, beide Gerätehostvarianten und beide Launcher: 0 Warnungen.
 - Workflow-YAML und beide WiX-XML-Dateien: syntaktisch geprüft.
 - Keine veralteten Versionsangaben oder Testdateinamen des Vorgängerstands im aktuellen Quellstand.
+- Generierte Root-Prüfsummen und obsolete Patch-Hinweise werden vor Preflight und Paketierung über eine explizite Allowlist entfernt.
