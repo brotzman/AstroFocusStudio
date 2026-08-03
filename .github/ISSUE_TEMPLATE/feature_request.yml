@@ -1,0 +1,19 @@
+name: Feature request
+description: Propose a focused improvement
+title: "[Feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Observing problem
+      description: Describe the concrete workflow or limitation.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the behaviour, including hardware and safety constraints.
+    validations:
+      required: true

@@ -1,0 +1,31 @@
+name: Bug report
+description: Report a reproducible AstroFocus Studio defect
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Value shown by the app or VERSION file
+    validations:
+      required: true
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Affected backend
+      options: [Simulator, ASCOM camera, ASCOM focuser, ToupTek, USB/UVC, Installer/Updater, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Include the exact state before the failure and what happened.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant diagnostics
+      description: Remove personal data and device serial numbers before pasting.
