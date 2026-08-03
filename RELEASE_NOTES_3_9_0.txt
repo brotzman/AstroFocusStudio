@@ -43,3 +43,11 @@ Startkorrektur nach erstem Statusabruf
 - Vorzeichen werden nun begrenzt und explizit formatiert.
 - UI-Aktualisierung besitzt feinere Diagnosephasen für künftige Startfehler.
 - GitHub-GUI-Smoke-Test bleibt Bestandteil beider Installerpfade.
+
+Benutzerbezogene Speicherung des Farbschemas
+--------------------------------------------
+- Das Farbschema wird pro Benutzer unter %LOCALAPPDATA%\AstroFocusStudio\AstroFocusUiSettings.ini gespeichert und nicht mehr neben der EXE unter C:\Program Files.
+- Der Zielordner wird automatisch angelegt; %TEMP% dient als Fallback, falls LOCALAPPDATA nicht verfügbar ist.
+- Die Datei wird über eine prozessspezifische temporäre Datei, Flush und atomaren Austausch geschrieben. Ein fehlgeschlagener Schreibvorgang beschädigt keine bereits gültige Einstellung.
+- Eine alte Einstellungsdatei neben der EXE wird einmalig gelesen und in den neuen Benutzerpfad migriert.
+- Speicherfehler werden mit Pfad und Windows-Fehlercode in FrontendTrace.log protokolliert, ohne die Bedienung durch einen modalen Warnhinweis zu unterbrechen.

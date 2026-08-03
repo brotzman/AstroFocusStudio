@@ -117,3 +117,10 @@ Das Hauptfenster wird vor dem lokalen Engine-Handshake sichtbar. Falls der Start
 ```
 
 Der GitHub-Windows-Workflow startet nach MSI- und Burn-Installation auch die reale `AstroFocusStudio.exe`, prüft das sichtbare und reagierende Hauptfenster und fordert anschließend einen sauberen Fensterschluss an. Bei einem Fehler werden Frontendtrace und passende Windows-Anwendungsereignisse als Testartefakte gesichert.
+
+## Benutzerbezogene UI-Einstellungen
+
+Das gewählte Farbschema wird pro Windows-Benutzer unter
+`%LOCALAPPDATA%\AstroFocusStudio\AstroFocusUiSettings.ini` gespeichert. Die
+Datei wird atomar ersetzt, sodass ein abgebrochener Schreibvorgang keine bereits
+gültige Einstellung beschädigt.

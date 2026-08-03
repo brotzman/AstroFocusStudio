@@ -20,10 +20,12 @@ Sleep
 CreateFileW
 ReadFile
 WriteFile
+FlushFileBuffers
 CloseHandle
 GetFileSize
 SetFilePointer
 DeleteFileW
+MoveFileExW
 GetFileAttributesW
 CreateProcessW
 WaitForSingleObject

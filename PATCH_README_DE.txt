@@ -1,10 +1,14 @@
-AstroFocus Studio 3.9.0 – UI-Startabsturz-Fix
+AstroFocus Studio 3.9.0 – Patch für die Speicherung des Farbschemas
 
-Den Inhalt dieses ZIPs in das Hauptverzeichnis des bestehenden 3.9.0-GitHub-Repositorys kopieren und vorhandene Dateien ersetzen.
+Den Inhalt dieses Patch-ZIPs in das Hauptverzeichnis des aktuellen 3.9.0-
+GitHub-Repositorys kopieren und vorhandene Dateien ersetzen.
 
-Danach:
+Anschließend:
+
   git add -A
-  git commit -m "Fix frontend crash during first UI status update"
+  git commit -m "Fix per-user theme settings persistence"
   git push
 
-Der Fix entfernt nicht unterstützte %+d-Formatierung aus USER32-wsprintfW, baut den Nachführungsstatus begrenzt ohne wsprintfW auf und ergänzt Regressionstests.
+Die Einstellung wird danach unter folgendem Pfad gespeichert:
+
+  %LOCALAPPDATA%\AstroFocusStudio\AstroFocusUiSettings.ini
