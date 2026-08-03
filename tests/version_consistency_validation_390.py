@@ -45,11 +45,23 @@ check("update manifest remains compatible with older 3.8.x installs", "MinimumSu
 check("release notes for 3.9.0 exist", (ROOT / "RELEASE_NOTES_3_9_0.txt").is_file())
 check("known limitations for 3.9.0 exist", (ROOT / "KNOWN_LIMITATIONS_3_9_0.txt").is_file())
 check("workflow preflight includes version consistency test", "tests\\version_consistency_validation_390.py" in workflow)
+run_python = read("scripts/Run-PythonTests.ps1")
+cleanup_script = read("scripts/remove_legacy_version_files.py")
+check("Python runner executes only the 3.9.0 test suite", "$currentSuffix = '_390.py'" in run_python)
+check("Python runner executes version consistency first", "$versionTest + $remainingTests" in run_python)
+check("legacy cleanup is allow-list based", "LEGACY_FILES = (" in cleanup_script)
+check("workflow invokes legacy cleanup", "Remove superseded version files" in workflow)
 
 text_extensions = {".cpp", ".h", ".inc", ".py", ".ps1", ".bat", ".cmd", ".sh", ".md", ".txt", ".yml", ".yaml", ".json", ".wxs", ".def"}
 stale_hits: list[str] = []
+allowed_legacy_reference_paths = {
+    Path(__file__).resolve(),
+    (ROOT / "scripts/remove_legacy_version_files.py").resolve(),
+    (ROOT / "tests/legacy_version_cleanup_validation_390.py").resolve(),
+    (ROOT / "docs/GITHUB_ACTIONS_VERSION_CLEANUP_DE.md").resolve(),
+}
 for path in ROOT.rglob("*"):
-    if path == Path(__file__).resolve() or not path.is_file() or path.suffix.lower() not in text_extensions:
+    if path.resolve() in allowed_legacy_reference_paths or not path.is_file() or path.suffix.lower() not in text_extensions:
         continue
     try:
         content = path.read_text(encoding="utf-8-sig")

@@ -30,9 +30,33 @@ if (-not (Test-Path -LiteralPath $testsDirectory -PathType Container)) {
     throw "Testverzeichnis fehlt: $testsDirectory"
 }
 
-$tests = @(Get-ChildItem -LiteralPath $testsDirectory -Filter '*.py' -File | Sort-Object Name)
+$cleanupScript = Join-Path $RepositoryRoot 'scripts\remove_legacy_version_files.py'
+if (-not (Test-Path -LiteralPath $cleanupScript -PathType Leaf)) {
+    throw "Versionsbereinigung fehlt: $cleanupScript"
+}
+$cleanupLog = Join-Path $logDirectory 'legacy-version-cleanup.log'
+$cleanup = Start-Process `
+    -FilePath $python.Source `
+    -ArgumentList @('-B', '-X', 'utf8', $cleanupScript, '--root', $RepositoryRoot, '--log', $cleanupLog) `
+    -WorkingDirectory $RepositoryRoot `
+    -NoNewWindow `
+    -Wait `
+    -PassThru
+if ($cleanup.ExitCode -ne 0) {
+    throw "Bereinigung alter Versionsdateien fehlgeschlagen (Exitcode $($cleanup.ExitCode)): $cleanupLog"
+}
+
+$currentSuffix = '_390.py'
+$versionTestName = 'version_consistency_validation_390.py'
+$allCurrentTests = @(Get-ChildItem -LiteralPath $testsDirectory -Filter "*$currentSuffix" -File | Sort-Object Name)
+$versionTest = @($allCurrentTests | Where-Object Name -EQ $versionTestName)
+$remainingTests = @($allCurrentTests | Where-Object Name -NE $versionTestName)
+$tests = @($versionTest + $remainingTests)
+if ($versionTest.Count -ne 1) {
+    throw "Versionskonsistenztest fehlt oder ist doppelt vorhanden: $versionTestName"
+}
 if ($tests.Count -eq 0) {
-    throw 'Keine Python-Regressionstests gefunden.'
+    throw 'Keine Python-Regressionstests der Version 3.9.0 gefunden.'
 }
 
 function Write-TestOutput([string]$Text) {

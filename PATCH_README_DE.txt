@@ -1,10 +1,14 @@
-AstroFocus Studio 3.8.8 – GitHub-Release-Repository-Kontext-Fix
+AstroFocus Studio 3.9.0 – Patch für supersedierte Versionsdateien
 
-Den Inhalt dieses ZIP-Archivs in das Hauptverzeichnis des bestehenden Repositorys kopieren. Vorhandene Dateien ersetzen und die Ordnerstruktur beibehalten.
+1. Den Inhalt dieses ZIPs in das Hauptverzeichnis des bestehenden
+   3.9.0-Repositorys kopieren und vorhandene Dateien ersetzen.
+2. Cleanup-Legacy-Version-Files.cmd ausführen.
+3. Danach im Repository ausführen:
 
-Danach:
-  git add -A
-  git commit -m "Fix GitHub release repository context"
-  git push
+   git add -A
+   git commit -m "Remove superseded version files"
+   git push
 
-Für die Veröffentlichung den neuen Workflow-Lauf des neuen Commits verwenden. Ein erneutes Ausführen des alten Workflow-Laufs verwendet weiterhin dessen alten Workflowstand.
+Wichtig: git add -A zeichnet auch die Löschung umbenannter Vorgängerdateien auf.
+Der GitHub-Workflow bereinigt diese exakt bekannten Altdateien zusätzlich in
+seinem temporären Arbeitsverzeichnis und führt nur die aktuelle Testsuite aus.
