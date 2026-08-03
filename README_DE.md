@@ -107,3 +107,13 @@ Motorbewegungen erfolgen ausschließlich zwischen abgeschlossenen Belichtungen. 
 Die neue Oberfläche zeigt Regelzustand, Begründung, Regelqualität, geschätzte Abweichung, Drift, Position, Ziel und Korrekturmarken. Ihre responsive Zweispaltenstruktur, berechneten Feldbreiten, umbrochenen Hinweise und das mindestens 100 Pixel hohe Diagramm verhindern Clipping am unterstützten Mindestfenster.
 
 Eine separate Guide-/OAG-/ONAG-Echtzeitquelle ist in 3.9.0 noch nicht angebunden. Die Funktion ist daher eine unterbrechungsarme Zwischenbild-Nachführung im AstroFocus-Livestream und bewegt den Fokussierer niemals während einer laufenden Hauptbelichtung. Details: [`docs/CONTINUOUS_FOCUS_DE.md`](docs/CONTINUOUS_FOCUS_DE.md).
+
+## Startdiagnose
+
+Das Hauptfenster wird vor dem lokalen Engine-Handshake sichtbar. Falls der Start dennoch fehlschlägt, liegt das Frontendprotokoll standardmäßig hier:
+
+```text
+%LOCALAPPDATA%\AstroFocusStudio\Logs\FrontendTrace.log
+```
+
+Der GitHub-Windows-Workflow startet nach MSI- und Burn-Installation auch die reale `AstroFocusStudio.exe`, prüft das sichtbare und reagierende Hauptfenster und fordert anschließend einen sauberen Fensterschluss an. Bei einem Fehler werden Frontendtrace und passende Windows-Anwendungsereignisse als Testartefakte gesichert.

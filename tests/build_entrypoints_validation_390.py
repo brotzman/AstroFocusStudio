@@ -3,6 +3,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 linux = (root / "build-windows-x64.sh").read_text(encoding="utf-8")
 windows = (root / "build-all-windows-x64.bat").read_text(encoding="utf-8")
+frontend_windows = (root / "frontend" / "build-windows-x64.bat").read_text(encoding="utf-8")
 
 component_dirs = ("frontend", "backend", "focuser_setup", "device_host", "tools")
 expected_outputs = {
@@ -31,6 +32,12 @@ checks = {
         for name in expected_outputs
         if name in script.read_text(encoding="utf-8", errors="ignore")
     },
+    "frontend Windows build regenerates current kernel32 import library":
+        all(token in frontend_windows for token in (
+            '/def:kernel32.def', '/implib:kernel32.lib', '/out:kernel32_stub.dll'
+        )),
+    "frontend build deletes optional linker stub only when present":
+        'if exist "kernel32_stub.dll" del /q "kernel32_stub.dll" >nul 2>&1' in frontend_windows,
     "device-host build deletes optional linker stubs only when present":
         'if exist "%%D_stub.dll" del /q "%%D_stub.dll" >nul 2>&1' in
         (root / "device_host" / "build-windows-x64.bat").read_text(encoding="utf-8"),
@@ -41,7 +48,7 @@ checks = {
     ),
     "batch builds contain no unconditional deletion of optional stub DLLs": all(
         not line.lstrip().lower().startswith("del /q ")
-        for script in (root / "device_host" / "build-windows-x64.bat", root / "tools" / "build-windows-x64.bat")
+        for script in (root / "frontend" / "build-windows-x64.bat", root / "device_host" / "build-windows-x64.bat", root / "tools" / "build-windows-x64.bat")
         for line in script.read_text(encoding="utf-8").splitlines()
     ),
     "tool launchers use dedicated wrapper translation units": all(

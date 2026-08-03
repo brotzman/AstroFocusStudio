@@ -113,3 +113,13 @@ The new **Nachführung** expert page provides predictive, image-based, and hybri
 The responsive page keeps labels, numeric fields, status text, controls, and its position/target chart inside the supported minimum window geometry. Long diagnostics scroll and the chart retains a minimum height.
 
 This 3.9.0 implementation does not yet consume a separate guide/OAG/ONAG stream and never moves the focuser during an active main exposure. See [`docs/CONTINUOUS_FOCUS_DE.md`](docs/CONTINUOUS_FOCUS_DE.md) for the detailed German specification and limitations.
+
+## Startup diagnostics
+
+The main window is shown before the local engine handshake. If startup still fails, the frontend trace is stored at:
+
+```text
+%LOCALAPPDATA%\AstroFocusStudio\Logs\FrontendTrace.log
+```
+
+The GitHub Windows workflow now starts the installed `AstroFocusStudio.exe` after both MSI and Burn installation, requires a visible responsive main window, and verifies a clean window close. Frontend trace and matching Windows application events are uploaded on failure.

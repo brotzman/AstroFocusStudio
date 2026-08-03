@@ -22,10 +22,17 @@ Lokale Verifikation des 3.9.0-Quellstands
 - Erzeugte Programme: 7/7.
 - Reproduzierbarer Doppelbuild: 7/7 SHA-256-identisch.
 - PE32+/x86-64, Zeitstempel 0, ASLR, High-Entropy-ASLR und DEP/NX: 7/7.
-- Native ASan-/UBSan-Prüfungen: 269/269.
-- Python-, Workflow-, Layout-, Installer- und Versionsprüfungen: 468/468.
-- Automatisierte Einzelprüfungen insgesamt: 737/737.
+- Native ASan-/UBSan-Prüfungen: 270/270.
+- Python-, Workflow-, Layout-, Installer- und Versionsprüfungen: 499/499.
+- Automatisierte Einzelprüfungen insgesamt: 769/769.
 - Clang Static Analyzer für Frontend, Engine, Fokussierer-Setup, beide Gerätehostvarianten und beide Launcher: 0 Warnungen.
 - Workflow-YAML und beide WiX-XML-Dateien: syntaktisch geprüft.
 - Keine veralteten Versionsangaben oder Testdateinamen des Vorgängerstands im aktuellen Quellstand.
 - Generierte Root-Prüfsummen und obsolete Patch-Hinweise werden vor Preflight und Paketierung über eine explizite Allowlist entfernt.
+
+Nachprüfung des Frontend-Starts
+-------------------------------
+- Der bisherige Release-Smoke-Test prüfte Hosts und Engine, startete jedoch nicht das installierte Hauptprogramm. Beide isolierten Windows-Installerjobs enthalten nun einen echten GUI-Starttest.
+- Das Hauptfenster wird vor dem synchronen Engine-Handshake angezeigt; Engine- oder Winsockfehler lassen das Diagnosefenster geöffnet.
+- Frühe Startabbrüche besitzen sichtbare Meldungen, Startphasen und einen benutzerspezifisch beschreibbaren Tracepfad.
+- Eine unsichere Traceformatierung mit festem 420-Byte-Gesamtpuffer wurde durch begrenzte Teilschreibvorgänge ersetzt.

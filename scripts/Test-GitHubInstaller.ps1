@@ -318,6 +318,155 @@ function Invoke-HealthCheck {
     }
 }
 
+function Copy-FrontendDiagnostics {
+    param(
+        [Parameter(Mandatory = $true)][DateTime]$StartedAt,
+        [switch]$IncludeEventLog
+    )
+
+    $localAppData = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
+    if (-not [string]::IsNullOrWhiteSpace($localAppData)) {
+        $sourceTrace = Join-Path $localAppData 'AstroFocusStudio\Logs\FrontendTrace.log'
+        if (Test-Path -LiteralPath $sourceTrace -PathType Leaf) {
+            Copy-Item -LiteralPath $sourceTrace -Destination (Join-Path $LogRoot 'frontend-trace.log') -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    if ($IncludeEventLog) {
+        try {
+            $events = Get-WinEvent -FilterHashtable @{ LogName = 'Application'; StartTime = $StartedAt } -ErrorAction Stop |
+                Where-Object {
+                    ($_.ProviderName -eq 'Application Error' -or $_.ProviderName -eq 'Windows Error Reporting') -and
+                    ($_.Message -match 'AstroFocusStudio\.exe')
+                } |
+                Select-Object TimeCreated, ProviderName, Id, LevelDisplayName, Message
+            if ($events) {
+                $events | Format-List * | Out-File -LiteralPath (Join-Path $LogRoot 'frontend-application-events.log') -Encoding utf8
+            }
+        } catch {
+            Write-SmokeLog "WARN: Windows-Anwendungsereignisse konnten nicht gelesen werden: $($_.Exception.Message)"
+        }
+    }
+}
+
+function Invoke-FrontendStartupCheck {
+    $program = Join-Path $InstallRoot 'AstroFocusStudio.exe'
+    if (-not (Test-Path -LiteralPath $program -PathType Leaf)) {
+        throw "Frontend fehlt: $program"
+    }
+
+    $startedAt = [DateTime]::Now.AddSeconds(-2)
+    $localAppData = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
+    if (-not [string]::IsNullOrWhiteSpace($localAppData)) {
+        Remove-Item -LiteralPath (Join-Path $localAppData 'AstroFocusStudio\Logs\FrontendTrace.log') -Force -ErrorAction SilentlyContinue
+    }
+
+    Write-SmokeLog 'START: Frontend-GUI-Startprüfung'
+    Write-SmokeLog "COMMAND: $program"
+    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $startInfo.FileName = $program
+    $startInfo.WorkingDirectory = $InstallRoot
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $false
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo = $startInfo
+    $passed = $false
+    $started = $false
+    try {
+        if (-not $process.Start()) {
+            throw 'AstroFocusStudio.exe konnte nicht gestartet werden.'
+        }
+        $started = $true
+        Write-SmokeLog "Frontend PID: $($process.Id)"
+        $deadline = [DateTime]::UtcNow.AddSeconds(25)
+        $windowFound = $false
+        while ([DateTime]::UtcNow -lt $deadline) {
+            if ($process.HasExited) {
+                $process.WaitForExit()
+                Copy-FrontendDiagnostics -StartedAt $startedAt -IncludeEventLog
+                throw "AstroFocusStudio.exe wurde während des Starts beendet (Exitcode $($process.ExitCode))."
+            }
+            $process.Refresh()
+            if ($process.MainWindowHandle -ne [IntPtr]::Zero -and $process.MainWindowTitle -like 'AstroFocus Studio 3.9.0*') {
+                $windowFound = $true
+                break
+            }
+            Start-Sleep -Milliseconds 250
+        }
+        if (-not $windowFound) {
+            Copy-FrontendDiagnostics -StartedAt $startedAt -IncludeEventLog
+            Stop-ProcessTree -ProcessId $process.Id
+            throw 'Das Hauptfenster erschien nicht innerhalb von 25 Sekunden.'
+        }
+
+        Write-SmokeLog "PASS: Frontend window visible: '$($process.MainWindowTitle)' (handle $($process.MainWindowHandle))"
+        # The visible window deliberately starts the local engine after it is shown.
+        # Give this bounded startup handshake time to finish instead of sampling the
+        # temporary busy state at one arbitrary three-second point.
+        $responsiveDeadline = [DateTime]::UtcNow.AddSeconds(15)
+        $responsive = $false
+        while ([DateTime]::UtcNow -lt $responsiveDeadline) {
+            if ($process.HasExited) {
+                $process.WaitForExit()
+                Copy-FrontendDiagnostics -StartedAt $startedAt -IncludeEventLog
+                throw "AstroFocusStudio.exe wurde kurz nach dem sichtbaren Start beendet (Exitcode $($process.ExitCode))."
+            }
+            $process.Refresh()
+            if ($process.Responding) {
+                $responsive = $true
+                break
+            }
+            Start-Sleep -Milliseconds 250
+        }
+        if (-not $responsive) {
+            Copy-FrontendDiagnostics -StartedAt $startedAt -IncludeEventLog
+            Stop-ProcessTree -ProcessId $process.Id
+            throw 'Das sichtbare AstroFocus-Hauptfenster reagierte nach dem begrenzten Engine-Startfenster nicht.'
+        }
+        Start-Sleep -Seconds 2
+        if ($process.HasExited) {
+            $process.WaitForExit()
+            Copy-FrontendDiagnostics -StartedAt $startedAt -IncludeEventLog
+            throw "AstroFocusStudio.exe wurde nach dem erfolgreichen sichtbaren Start beendet (Exitcode $($process.ExitCode))."
+        }
+
+        Write-SmokeLog 'CLOSE: request graceful frontend shutdown'
+        if (-not $process.CloseMainWindow()) {
+            Copy-FrontendDiagnostics -StartedAt $startedAt -IncludeEventLog
+            Stop-ProcessTree -ProcessId $process.Id
+            throw 'WM_CLOSE konnte nicht an das Hauptfenster gesendet werden.'
+        }
+        if (-not $process.WaitForExit(15000)) {
+            Copy-FrontendDiagnostics -StartedAt $startedAt -IncludeEventLog
+            Stop-ProcessTree -ProcessId $process.Id
+            throw 'Das Frontend wurde nach WM_CLOSE nicht innerhalb von 15 Sekunden beendet.'
+        }
+        $process.WaitForExit()
+        if ($process.ExitCode -ne 0) {
+            Copy-FrontendDiagnostics -StartedAt $startedAt -IncludeEventLog
+            throw "Das Frontend beendete den normalen Fensterschluss mit Exitcode $($process.ExitCode)."
+        }
+        $passed = $true
+        Write-SmokeLog 'PASS: Frontend starts, stays responsive and closes cleanly'
+    } finally {
+        if (-not $passed) {
+            Copy-FrontendDiagnostics -StartedAt $startedAt -IncludeEventLog
+        } else {
+            Copy-FrontendDiagnostics -StartedAt $startedAt
+        }
+        if ($started -and -not $process.HasExited) {
+            Stop-ProcessTree -ProcessId $process.Id
+        }
+        $process.Dispose()
+        Start-Sleep -Seconds 1
+        $remainingEngine = @(Get-Process -Name 'AstroFocusEngine' -ErrorAction SilentlyContinue)
+        foreach ($engine in $remainingEngine) {
+            Write-SmokeLog "WARN: frontend shutdown left engine PID $($engine.Id); stopping it before installer repair."
+            Stop-Process -Id $engine.Id -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 function Stop-AstroFocusProcesses {
     $names = @(
         'AstroFocusStudio',
@@ -395,6 +544,7 @@ try {
         Assert-InstalledPayload
         Assert-DesktopShortcut
         Invoke-HealthCheck
+        Invoke-FrontendStartupCheck
 
         $repairProbe = Join-Path $InstallRoot 'AstroFocusFocuserHost.exe'
         Remove-Item -LiteralPath $repairProbe -Force
@@ -418,6 +568,7 @@ try {
         Assert-InstalledPayload
         Assert-DesktopShortcut
         Invoke-HealthCheck
+        Invoke-FrontendStartupCheck
 
         $repairProbe = Join-Path $InstallRoot 'AstroFocusFocuserHost.exe'
         Remove-Item -LiteralPath $repairProbe -Force

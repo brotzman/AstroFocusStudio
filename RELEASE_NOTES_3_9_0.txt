@@ -29,3 +29,11 @@ Sicherheits- und Logikkorrekturen
 Wichtige Abgrenzung
 -------------------
 Die kontinuierliche Fokusnachführung nutzt in 3.9.0 normale AstroFocus-Livebilder und das gelernte Temperaturmodell. Eine separate Guidekamera-, OAG- oder ONAG-Echtzeitquelle ist noch nicht gekoppelt. Während einer laufenden Hauptbelichtung wird der Fokussierer bewusst niemals bewegt.
+
+Startstabilität und Diagnose
+----------------------------
+- Das Hauptfenster wird jetzt sichtbar und vollständig initialisiert, bevor der lokale Engine-Handshake beginnt. Ein fehlgeschlagener oder verzögerter Engine-Start beendet das Frontend nicht mehr unsichtbar.
+- Frühe Fehler bei Fensterklasse, Hauptfenster, Bedienelementen, Winsock und Nachrichtenschleife werden sichtbar gemeldet und mit der exakten Startphase protokolliert.
+- FrontendTrace.log liegt nun im beschreibbaren Benutzerprofil unter %LOCALAPPDATA%\AstroFocusStudio\Logs; %TEMP% dient als Fallback.
+- Der Ausnahmehandler schreibt lange Diagnosetexte in begrenzten Teilschritten und kann dadurch die ursprüngliche Ausnahme nicht mehr durch einen eigenen Pufferüberlauf verdecken.
+- Der Windows-Installer-Smoke-Test startet nach MSI- und Burn-Installation erstmals die reale AstroFocusStudio.exe, verlangt ein sichtbares und reagierendes Hauptfenster und prüft einen sauberen WM_CLOSE-Abschluss.

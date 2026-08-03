@@ -32,3 +32,6 @@ TerminateProcess
 MultiByteToWideChar
 WideCharToMultiByte
 GetLocalTime
+GetEnvironmentVariableW
+CreateDirectoryW
+GetLastError

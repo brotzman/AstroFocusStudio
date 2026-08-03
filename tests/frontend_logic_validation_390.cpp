@@ -19,10 +19,10 @@ BOOL WINAPI ShowWindow(HWND,int){return TRUE;}
 BOOL WINAPI InvalidateRect(HWND,const RECT*,BOOL){return TRUE;}
 static HWND lastMovedH=0;static int lastMoveX=0,lastMoveY=0,lastMoveW=0,lastMoveH=0;
 BOOL WINAPI MoveWindow(HWND h,int x,int y,int w,int hh,BOOL){lastMovedH=h;lastMoveX=x;lastMoveY=y;lastMoveW=w;lastMoveH=hh;return TRUE;}
-static wchar_t fakeText[64][128];static BOOL fakeEnabled[64];static int fakeComboSel[64];
-BOOL WINAPI SetWindowTextW(HWND h,LPCWSTR str){int i=(int)(ULONG_PTR)h-1;if(i>=0&&i<64){int n=0;while(str&&str[n]&&n<127){fakeText[i][n]=str[n];n++;}fakeText[i][n]=0;}return TRUE;}
-int WINAPI GetWindowTextW(HWND h,LPWSTR out,int cap){if(!out||cap<=0)return 0;int i=(int)(ULONG_PTR)h-1,n=0;if(i>=0&&i<64){while(fakeText[i][n]&&n<cap-1){out[n]=fakeText[i][n];n++;}}out[n]=0;return n;}
-BOOL WINAPI EnableWindow(HWND h,BOOL on){int i=(int)(ULONG_PTR)h-1;if(i>=0&&i<64)fakeEnabled[i]=on;return TRUE;}
+static wchar_t fakeText[256][2048];static BOOL fakeEnabled[256];static int fakeComboSel[256];static int fakeNextHandle=0;
+BOOL WINAPI SetWindowTextW(HWND h,LPCWSTR str){int i=(int)(ULONG_PTR)h-1;if(i>=0&&i<256){int n=0;while(str&&str[n]&&n<127){fakeText[i][n]=str[n];n++;}fakeText[i][n]=0;}return TRUE;}
+int WINAPI GetWindowTextW(HWND h,LPWSTR out,int cap){if(!out||cap<=0)return 0;int i=(int)(ULONG_PTR)h-1,n=0;if(i>=0&&i<256){while(fakeText[i][n]&&n<cap-1){out[n]=fakeText[i][n];n++;}}out[n]=0;return n;}
+BOOL WINAPI EnableWindow(HWND h,BOOL on){int i=(int)(ULONG_PTR)h-1;if(i>=0&&i<256)fakeEnabled[i]=on;return TRUE;}
 void WINAPI GetLocalTime(SYSTEMTIME* s){s->wYear=2026;s->wMonth=7;s->wDay=31;s->wHour=12;s->wMinute=0;s->wSecond=0;s->wMilliseconds=0;}
 static ULONGLONG fakeTick=1000;ULONGLONG WINAPI GetTickCount64(void){return fakeTick;}
 HANDLE WINAPI CreateFileW(LPCWSTR,DWORD,DWORD,SECURITY_ATTRIBUTES*,DWORD,DWORD,HANDLE){return INVALID_HANDLE_VALUE;}
@@ -33,13 +33,20 @@ BOOL WINAPI CloseHandle(HANDLE){fakeCloseCount++;return TRUE;}
 int WINAPI MessageBoxW(HWND,LPCWSTR,LPCWSTR,UINT){return 0;}
 DWORD WINAPI GetFileAttributesW(LPCWSTR){return INVALID_FILE_ATTRIBUTES;}
 DWORD WINAPI GetTempPathW(DWORD cap,LPWSTR out){if(!out||cap<4)return 0;out[0]=L'C';out[1]=L':';out[2]=L'\\';out[3]=0;return 3;}
+DWORD WINAPI GetEnvironmentVariableW(LPCWSTR,LPWSTR out,DWORD cap){const wchar_t* v=L"C:\\Users\\Test\\AppData\\Local";int n=0;while(v[n])n++;if(!out||cap<=(DWORD)n)return (DWORD)(n+1);for(int i=0;i<=n;i++)out[i]=v[i];return (DWORD)n;}
+BOOL WINAPI CreateDirectoryW(LPCWSTR,SECURITY_ATTRIBUTES*){return TRUE;}
+DWORD WINAPI GetLastError(void){return ERROR_ALREADY_EXISTS;}
 DWORD WINAPI GetCurrentProcessId(void){return 42;}
 BOOL WINAPI DeleteFileW(LPCWSTR){return TRUE;}
 BOOL WINAPI CreateProcessW(LPCWSTR,LPWSTR,SECURITY_ATTRIBUTES*,SECURITY_ATTRIBUTES*,BOOL,DWORD,LPVOID,LPCWSTR,STARTUPINFOW*,PROCESS_INFORMATION*){return FALSE;}
 DWORD WINAPI WaitForSingleObject(HANDLE,DWORD){return fakeProcessSignaled?WAIT_OBJECT_0:258U;}
 BOOL WINAPI PostMessageW(HWND,UINT,WPARAM,LPARAM){return TRUE;}
-static int fakeChecks[64];static int fakeComboMinVisible[64];static HWND FH(int i){return (HWND)(ULONG_PTR)(i+1);}static int FHI(HWND h){return (int)(ULONG_PTR)h-1;}
-LRESULT WINAPI SendMessageW(HWND h,UINT msg,WPARAM w,LPARAM){int i=FHI(h);if(i>=0&&i<64){if(i<8&&msg==BM_GETCHECK)return fakeChecks[i]?BST_CHECKED:0;if(i<8&&msg==BM_SETCHECK){fakeChecks[i]=(w==BST_CHECKED);return 0;}if(msg==CB_GETCURSEL)return fakeComboSel[i];if(msg==CB_SETCURSEL){fakeComboSel[i]=(int)w;return w;}if(msg==CB_ADDSTRING)return 0;if(msg==CB_SETMINVISIBLE){fakeComboMinVisible[i]=(int)w;return TRUE;}}return 0;}
+static int fakeChecks[256];static int fakeComboMinVisible[256];static HWND FH(int i){return (HWND)(ULONG_PTR)(i+1);}static int FHI(HWND h){return (int)(ULONG_PTR)h-1;}
+HWND WINAPI CreateWindowExW(DWORD,LPCWSTR,LPCWSTR text,DWORD,int,int,int,int,HWND,HMENU,HINSTANCE,LPVOID){
+    if(fakeNextHandle>=245)return 0; HWND h=FH(fakeNextHandle++); int i=FHI(h); fakeEnabled[i]=TRUE; if(text){int n=0;while(text[n]&&n<2047){fakeText[i][n]=text[n];n++;}fakeText[i][n]=0;} return h;
+}
+
+LRESULT WINAPI SendMessageW(HWND h,UINT msg,WPARAM w,LPARAM){int i=FHI(h);if(i>=0&&i<256){if(i<8&&msg==BM_GETCHECK)return fakeChecks[i]?BST_CHECKED:0;if(i<8&&msg==BM_SETCHECK){fakeChecks[i]=(w==BST_CHECKED);return 0;}if(msg==CB_GETCURSEL)return fakeComboSel[i];if(msg==CB_SETCURSEL){fakeComboSel[i]=(int)w;return w;}if(msg==CB_ADDSTRING)return 0;if(msg==CB_SETMINVISIBLE){fakeComboMinVisible[i]=(int)w;return TRUE;}}return 0;}
 static char* fakeHttp=0;static int fakeHttpSize=0,fakeHttpPos=0,fakeConnectCount=0;
 static SOCKET WINAPI FakeSocket(int,int,int){return 1;}
 static int WINAPI FakeConnect(SOCKET,const SOCKADDR*,int){fakeConnectCount++;return 0;}
@@ -54,6 +61,11 @@ static unsigned long WINAPI FakeHtonl(unsigned long v){return v;}
 static int check(bool ok,const char* name){printf("%-42s %s\n",name,ok?"PASS":"FAIL");return ok?1:0;}
 int main(){
     int pass=0,total=0;
+    g_main=FH(250); g_font=FH(249); g_small=FH(248); g_title=FH(247); g_mono=FH(246);
+    CreateControls();
+    Layout(1720,1020);
+    UpdatePage();
+    total++;pass+=check(fakeNextHandle>80,"Frontend startup: all controls created in native harness");
     const char* json="{\"version\":\"3.9.0\",\"camera\":true,\"focuser\":true,\"autofocus\":false,\"stepAssistantActive\":true,\"live\":true,\"frameReady\":true,\"frameSequence\":17,\"frameAgeMs\":240,\"simulator\":true,\"external\":false,\"native\":false,\"stretch\":true,\"stars\":true,\"values\":true,\"saturation\":true,\"zones\":true,\"bahtinov\":false,\"preferredOut\":true,\"autoRefocus\":true,\"autoRefocusAutomaticRun\":true,\"autoRefocusReferenceReady\":true,\"autoRefocusReferenceFwhm\":3.10,\"autoRefocusPaused\":true,\"autoRefocusTimeEnabled\":false,\"autoRefocusTemperatureEnabled\":true,\"autoRefocusFwhmEnabled\":true,\"autoRefocusTemperatureRequired\":true,\"autoRefocusLiveWillResume\":true,\"autofocusErrorAutomatic\":true,\"autoRefocusFailureCount\":2,\"autoRefocusBadFrameStreak\":3,\"autoRefocusElapsedMinutes\":62.5,\"autoRefocusNextMinutes\":-1.0,\"autoRefocusTempDelta\":1.7,\"autoRefocusFwhmDegradePercent\":14.2,\"autoRefocusRetrySeconds\":12,\"autoRefocusCooldownRemainingMinutes\":7.5,\"autoRefocusLastReason\":\"Temperaturänderung\",\"autofocusErrorCode\":\"AF_CAMERA_CAPTURE_FAILED\",\"autofocusErrorTitle\":\"Kameraaufnahme fehlgeschlagen\",\"autofocusErrorDetail\":\"Testdetail\",\"cameraWorkerBlocked\":true,\"cameraWorkerRetrySeconds\":30,\"cameraWorkerOperation\":\"ImageReady\",\"focuserWorkerBlocked\":false,\"focuserWorkerRetrySeconds\":0,\"focuserWorkerOperation\":\"–\",\"manualStarLocked\":true,\"afUseSelectedStar\":true,\"cameraName\":\"Synthetische Kamera\",\"focuserName\":\"Simulator\",\"status\":\"Live\",\"profile\":\"Test\",\"selfTestSummary\":\"19 von 19\",\"tiltDirection\":\"rechts unten\",\"exposure\":\"800\",\"gain\":\"180\",\"manualStep\":\"100\",\"afPoints\":\"9\",\"afStep\":\"120\",\"afSamples\":\"2\",\"backlash\":\"250\",\"refocusMinutes\":\"60\",\"refocusTemp\":\"1,5\",\"refocusFwhmPercent\":25.0,\"refocusBadFrames\":4,\"refocusMinStars\":5,\"refocusStability\":0.4,\"refocusCooldown\":12.0,\"position\":24180,\"starCount\":3,\"usedStars\":2,\"selfTestPassed\":19,\"selfTestTotal\":19,\"safeMin\":0,\"safeMax\":60000,\"fwhm\":3.25,\"hfr\":1.55,\"snr\":42.5,\"ecc\":0.12,\"stability\":0.08,\"temperature\":12.3,\"hasTemperature\":true,\"selectedFwhm\":3.1,\"selectedHfr\":1.5,\"selectedSnr\":50,\"selectedEcc\":0.1,\"bahtOffset\":0,\"bahtConfidence\":0,\"sharpness\":90,\"bahtValid\":false,\"tilt\":0.4,\"tiltValid\":true,\"zoneFwhm\":[3,3.1,3.2,3.1,3,3.2,3.3,3.2,3.4],\"zoneCounts\":[2,2,2,2,2,2,2,2,2],\"afPositions\":[24060,24180,24300],\"afMetrics\":[1.2,1,1.3],\"afFwhmMetrics\":[3.4,3.1,3.5],\"afMeasuredCount\":3,\"afFitValid\":true,\"afFitFwhmValid\":true,\"afFitA\":0.2,\"afFitB\":0,\"afFitC\":1.0,\"afFitFwhmA\":0.4,\"afFitFwhmB\":0,\"afFitFwhmC\":3.1,\"afFitCenter\":24180,\"afFitScale\":120,\"afFitR2\":0.99,\"afFitFwhmR2\":0.98,\"afFitConfidence\":0.95,\"afBestPosition\":24180,\"afExpectedHfr\":1.0,\"afExpectedFwhm\":3.1,\"afFinalValid\":true,\"afFinalPosition\":24180,\"afFinalHfr\":1.02,\"afFinalFwhm\":3.12,\"starX\":[100,200,300],\"starY\":[150,250,350],\"starFwhm\":[3.1,3.2,3.3],\"starUsed\":[1,1,0],\"starSaturated\":[0,1,0],\"selectedStar\":1}";
     ParseStatus(json);
     total++;pass+=check(g_state.camera&&g_state.focuser&&g_state.live&&g_state.simulator&&g_state.stepAssistantActive,"Frontend: Status- und Schritt-Assistent-Bools");
