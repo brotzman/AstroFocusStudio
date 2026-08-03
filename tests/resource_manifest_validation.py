@@ -19,7 +19,15 @@ check("manifest enables long paths", '<longPathAware xmlns="http://schemas.micro
 check("manifest declares supported Windows versions", generator.count("<supportedOS Id=") >= 5)
 check("PE metadata uses central semantic version", "read_version(version_path)" in generator and 'string_block("ProductVersion", text)' in generator)
 check("all applications receive generated resources", build.count("make_resources") >= 8 and '"$res"' in build)
-check("one central icon is used", 'assets/AstroFocusStudio.ico' in build and not any((ROOT / d / "AstroFocusStudio.ico").exists() for d in ("frontend", "backend", "focuser_setup")))
+central_icon = ROOT / "assets" / "AstroFocusStudio.ico"
+duplicate_icons = [ROOT / directory / "AstroFocusStudio.ico" for directory in ("frontend", "backend", "focuser_setup")]
+central_icon_ok = central_icon.is_file() and 'assets/AstroFocusStudio.ico' in build and not any(path.is_file() for path in duplicate_icons)
+check("one central icon is used", central_icon_ok)
+if not central_icon_ok:
+    print(f"  central icon: {central_icon} ({'present' if central_icon.is_file() else 'missing'})")
+    for path in duplicate_icons:
+        if path.is_file():
+            print(f"  duplicate icon: {path}")
 
 with tempfile.TemporaryDirectory() as temporary:
     target = Path(temporary) / "test.res"
