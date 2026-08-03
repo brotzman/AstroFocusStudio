@@ -1,4 +1,4 @@
-AstroFocus Studio 3.8.8 – Update-Schlüssel
+AstroFocus Studio 3.9.0 – Update-Schlüssel
 
 update-public-key.cer enthält ausschließlich einen öffentlichen Entwicklungs-
 Prüfschlüssel. Der private Schlüssel wurde nicht gespeichert und ist nicht im

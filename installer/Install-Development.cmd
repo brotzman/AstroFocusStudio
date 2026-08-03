@@ -1,9 +1,9 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title AstroFocus Studio 3.8.8 Setup
+title AstroFocus Studio 3.9.0 Setup
 
-echo AstroFocus Studio 3.8.8 wird installiert.
+echo AstroFocus Studio 3.9.0 wird installiert.
 echo Bitte bestaetigen Sie gegebenenfalls die Windows-Administratorabfrage.
 echo.
 

@@ -1,4 +1,4 @@
-# Installer, Reparatur und Rollback – 3.8.8
+# Installer, Reparatur und Rollback – 3.9.0
 
 ## Installation des unsignierten Entwicklungsbuilds
 

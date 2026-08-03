@@ -1,4 +1,4 @@
-// AstroFocus Studio 3.8.8 setup/updater launcher.
+// AstroFocus Studio 3.9.0 setup/updater launcher.
 // Starts the fixed sibling PowerShell script and reports bootstrap failures visibly.
 extern "C" {
 typedef unsigned long DWORD; typedef int BOOL; typedef unsigned short WORD; typedef unsigned char BYTE;

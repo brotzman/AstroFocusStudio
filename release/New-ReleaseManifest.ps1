@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([Parameter(Mandatory=$true)][string]$Payload,[string]$Version='3.8.8')
+param([Parameter(Mandatory=$true)][string]$Payload,[string]$Version='3.9.0')
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 $root=(Resolve-Path -LiteralPath $Payload).Path.TrimEnd('\')

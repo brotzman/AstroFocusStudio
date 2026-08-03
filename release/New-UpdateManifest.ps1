@@ -1,11 +1,11 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
  [Parameter(Mandatory=$true)][string]$Package,
  [Parameter(Mandatory=$true)][string]$PackageUrl,
  [Parameter(Mandatory=$true)][string]$Version,
  [Parameter(Mandatory=$true)][string]$SigningPfx,
  [Parameter(Mandatory=$true)][securestring]$PfxPassword,
- [string]$Channel='stable',[string]$MinimumSupportedVersion='3.8.8',[string]$Publisher='Thomas Brotze',
+ [string]$Channel='stable',[string]$MinimumSupportedVersion='3.8.1',[string]$Publisher='Thomas Brotze',
  [string]$Output='update-manifest.json')
 Set-StrictMode -Version Latest;$ErrorActionPreference='Stop'
 $sha=(Get-FileHash -Algorithm SHA256 -LiteralPath $Package).Hash.ToLowerInvariant()

@@ -22,7 +22,7 @@ if ([string]::IsNullOrWhiteSpace($Source)) {
     $Source = Join-Path -Path $ScriptDirectory -ChildPath 'payload'
 }
 $ProductName = 'AstroFocus Studio'
-$Version = '3.8.8'
+$Version = '3.9.0'
 $InstallRoot = Join-Path $env:ProgramFiles $ProductName
 $AdminDataRoot = Join-Path $env:ProgramData 'AstroFocusStudio'
 $RollbackRoot = Join-Path $AdminDataRoot 'InstallerRollback'

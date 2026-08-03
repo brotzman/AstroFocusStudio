@@ -4,8 +4,8 @@ param(
 
     [string]$Output='',
 
-    [string]$ProductVersion = '3.8.8',
-    [string]$BundleVersion = '3.8.8.0',
+    [string]$ProductVersion = '3.9.0',
+    [string]$BundleVersion = '3.9.0.0',
     [string]$WixVersion = '5.0.2',
     [string]$WixExe = 'wix.exe',
     [switch]$DevelopmentBuild

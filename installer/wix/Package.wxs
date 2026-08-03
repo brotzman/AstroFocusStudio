@@ -57,7 +57,7 @@
           <File Id="ReadmeDe" Source="$(var.Payload)\README_DE.md" KeyPath="yes" />
         </Component>
         <Component Id="CmpKnownLimitations" Guid="*" Bitness="always64">
-          <File Id="KnownLimitations" Source="$(var.Payload)\KNOWN_LIMITATIONS_3_8_8.txt" KeyPath="yes" />
+          <File Id="KnownLimitations" Source="$(var.Payload)\KNOWN_LIMITATIONS_3_9_0.txt" KeyPath="yes" />
         </Component>
         <?ifdef DevelopmentBuild ?>
         <Component Id="CmpUnsignedDevelopmentMarker" Guid="*" Bitness="always64">
@@ -72,7 +72,7 @@
         <Shortcut
             Id="DesktopShortcutLink"
             Name="AstroFocus Studio"
-            Description="AstroFocus Studio 3.8.8"
+            Description="AstroFocus Studio 3.9.0"
             Target="[INSTALLFOLDER]AstroFocusStudio.exe"
             WorkingDirectory="INSTALLFOLDER" />
         <RegistryValue
@@ -91,7 +91,7 @@
           <Shortcut
               Id="StartMenuShortcut"
               Name="AstroFocus Studio"
-              Description="AstroFocus Studio 3.8.8"
+              Description="AstroFocus Studio 3.9.0"
               Target="[INSTALLFOLDER]AstroFocusStudio.exe"
               WorkingDirectory="INSTALLFOLDER" />
           <RemoveFolder Id="RemoveProgramMenuProductFolder" On="uninstall" />

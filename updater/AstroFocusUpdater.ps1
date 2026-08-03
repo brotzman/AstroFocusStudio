@@ -13,7 +13,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $Product = 'AstroFocus Studio'
-$BundledVersion = [version]'3.8.8'
+$BundledVersion = [version]'3.9.0'
 $InstallRoot = Join-Path $env:ProgramFiles $Product
 $DataRoot = Join-Path $env:LOCALAPPDATA 'AstroFocusStudio'
 $UpdateRoot = Join-Path $DataRoot 'Updates'
