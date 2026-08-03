@@ -136,6 +136,20 @@ jobs:
             "Workspace: $env:GITHUB_WORKSPACE"
           ) | Set-Content -LiteralPath (Join-Path $logDirectory 'preflight.log') -Encoding utf8
 
+      - name: Remove superseded version files
+        shell: powershell
+        run: |
+          $repositoryRoot = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE)
+          $cleanupScript = Join-Path $repositoryRoot 'scripts\remove_legacy_version_files.py'
+          $cleanupLog = Join-Path $repositoryRoot 'artifacts\test-logs\legacy-version-cleanup.log'
+          if (-not (Test-Path -LiteralPath $cleanupScript -PathType Leaf)) {
+            throw "Legacy-version cleanup script is missing: $cleanupScript"
+          }
+          & python -B -X utf8 $cleanupScript --root $repositoryRoot --log $cleanupLog
+          if ($LASTEXITCODE -ne 0) {
+            throw "Legacy-version cleanup failed with exit code $LASTEXITCODE. Log: $cleanupLog"
+          }
+
       - name: Verify repository build entry points
         shell: powershell
         run: |
@@ -144,6 +158,7 @@ jobs:
           $requiredFiles = @(
             'scripts\Build-GitHubArtifacts.ps1',
             'scripts\Run-PythonTests.ps1',
+            'scripts\remove_legacy_version_files.py',
             'scripts\Test-GitHubInstaller.ps1',
             'scripts\Run-NativeTests.sh',
             'tests\github_workflow_validation_390.py',
