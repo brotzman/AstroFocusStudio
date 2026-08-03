@@ -39,3 +39,11 @@ contracts. Native tests run with AddressSanitizer and UndefinedBehaviorSanitizer
 
 Edit only `VERSION`. The build regenerates `common/version.h`, PE version data,
 manifest identity, installer versions and release metadata from that value.
+
+## Git for Windows argument handling
+
+The central Bash build deliberately passes LLVM/COFF options with a leading dash
+(for example `-nologo` and `-machine:x64`). Do not change these back to the
+MSVC-style slash spelling in a Bash script: Git for Windows/MSYS can interpret
+`/nologo` as a POSIX path and rewrite it to `C:/Program Files/Git/nologo`.
+Windows-only PowerShell or batch scripts may still use slash-style switches.

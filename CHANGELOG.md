@@ -5,6 +5,8 @@ notes for the current release are in `RELEASE_NOTES.txt`.
 
 ## Corrective maintenance
 
+- Prevent Git for Windows/MSYS from rewriting LLVM COFF switches such as `/nologo` into paths like `C:/Program Files/Git/nologo`; the Bash build now uses LLVM-compatible dash-prefixed options.
+- Add a regression test that rejects MSVC-style slash switches passed from Bash to `clang-cl` or `lld-link`.
 - Automatically synchronise a successfully calibrated backlash value into the visible autofocus settings while preserving unrelated unsaved edits.
 - Store the calibrated value in the active runtime autofocus state and focus model.
 - Widen and relabel the Tests-page button to “Simulation übernehmen” so the full caption remains visible.
