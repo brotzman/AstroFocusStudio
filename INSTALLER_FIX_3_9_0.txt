@@ -1,0 +1,46 @@
+AstroFocus Studio 3.9.0 – Installer-Startkorrekturen
+Stand: 2. August 2026
+
+Behobenes Benutzerproblem
+-------------------------
+Beim Start erschien zunächst nur kurz ein Konsolenfenster. Nach der ersten
+Bootstrap-Korrektur zeigte der Launcher zwar einen Fehlerdialog, der eigentliche
+PowerShell-Installer endete jedoch weiterhin mit Exitcode 1 und legte noch kein
+Installer.log an.
+
+Bestätigte Hauptursache
+-----------------------
+AstroFocusSetup.ps1 verwendete im param-Block den Standardwert:
+
+    [string]$Source = (Join-Path $PSScriptRoot 'payload')
+
+Unter Windows PowerShell 5.1 kann $PSScriptRoot während der Auswertung von
+Parameter-Standardwerten noch leer sein. Join-Path brach deshalb bereits bei der
+Parameterbindung ab – vor Set-StrictMode, vor dem try/catch und vor der
+Initialisierung von C:\ProgramData\AstroFocusStudio\Logs\Installer.log.
+
+Korrekturen
+-----------
+- $Source besitzt nun einen inert leeren Parameter-Standardwert.
+- Der Skriptordner wird erst nach abgeschlossener Parameterbindung ermittelt.
+- $PSScriptRoot wird durch $MyInvocation.MyCommand.Path abgesichert.
+- Der Standard-Payloadpfad wird erst im ausführbaren Skriptkörper gebildet.
+- Alle pfadkritischen Setupfunktionen verwenden den stabil ermittelten Skriptordner.
+- Derselbe PowerShell-5.1-Fehler wurde vorsorglich in build-wix.ps1 behoben.
+- Eine neue Regression prüft, dass kein PowerShell-Skript mehr $PSScriptRoot in
+  Parameter-Standardwerten des Setup-/WiX-Pfads auswertet.
+
+Bereits enthaltene Bootstrap-Korrekturen
+----------------------------------------
+- fester Windows-PowerShell-5.1-Pfad über GetSystemDirectoryW
+- ExecutionPolicy Bypass ausschließlich für das fest benannte Nachbarskript
+- native MessageBox für fehlendes Skript, fehlendes PowerShell, Startfehler und Exitcode
+- automatische Erkennung des ausdrücklich markierten Entwicklungsbuilds
+- sichtbarer Erfolgs-/Fehlerdialog nach der UAC-Installation
+- Entfernung von Zone.Identifier nur bei gültiger Bundle- und Payload-Markierung
+- Install-Development.cmd hält die Konsole bei Fehlern offen
+
+Diagnoseprotokoll
+-----------------
+Nach erfolgreicher Parameterbindung und Initialisierung:
+C:\ProgramData\AstroFocusStudio\Logs\Installer.log

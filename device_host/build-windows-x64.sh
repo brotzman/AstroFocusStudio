@@ -13,4 +13,4 @@ clang-cl /nologo /W4 /WX /O2 /GS /DUNICODE /D_UNICODE /DASTROFOCUS_HOST_CAMERA=1
 lld-link /nologo /machine:x64 /timestamp:0 /subsystem:windows /entry:WinMainCRTStartup /nodefaultlib camera_host.obj security_cookie.obj security_entry.obj chkstk.obj kernel32.lib ole32.lib oleaut32.lib /out:AstroFocusCameraHost.exe
 clang-cl /nologo /W4 /WX /O2 /GS /DUNICODE /D_UNICODE /DASTROFOCUS_HOST_CAMERA=0 /c device_host.cpp /Fo:focuser_host.obj
 lld-link /nologo /machine:x64 /timestamp:0 /subsystem:windows /entry:WinMainCRTStartup /nodefaultlib focuser_host.obj security_cookie.obj security_entry.obj chkstk.obj kernel32.lib ole32.lib oleaut32.lib /out:AstroFocusFocuserHost.exe
-printf 'Device hosts 3.8.8 built.\n'
+printf 'Device hosts 3.9.0 built.\n'

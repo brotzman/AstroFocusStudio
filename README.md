@@ -1,11 +1,11 @@
-# AstroFocus Studio 3.8.8
+# AstroFocus Studio 3.9.0
 
 Native Windows-x64-Anwendung für Live-Fokus, statistisch ausgewerteten Autofokus,
 Bahtinov-Unterstützung, Fokusautomation und reproduzierbare Simulatorprüfungen.
 
 Die ausführliche deutschsprachige Funktions- und Sicherheitsbeschreibung steht in
 [`README_DE.md`](README_DE.md). Bekannte Grenzen sind in
-[`KNOWN_LIMITATIONS_3_8_8.txt`](KNOWN_LIMITATIONS_3_8_8.txt) dokumentiert.
+[`KNOWN_LIMITATIONS_3_9_0.txt`](KNOWN_LIMITATIONS_3_9_0.txt) dokumentiert.
 
 ## GitHub-Actions-Build
 
@@ -19,18 +19,18 @@ voneinander abhängigen Jobs:
    Reparatur-, Health-Check- und Deinstallationstest.
 
 Nach einem erfolgreichen Build liegt unter **Actions → Artifacts** das Artefakt
-`AstroFocusStudio-3.8.8-Windows-x64`. Es enthält:
+`AstroFocusStudio-3.9.0-Windows-x64`. Es enthält:
 
-- `AstroFocusStudio-3.8.8-Setup.exe`
-- `AstroFocusStudio-3.8.8-x64.msi`
-- `AstroFocusStudio-3.8.8-Portable-Windows-x64.zip`
-- `AstroFocusStudio-3.8.8-Source.zip`
+- `AstroFocusStudio-3.9.0-Setup.exe`
+- `AstroFocusStudio-3.9.0-x64.msi`
+- `AstroFocusStudio-3.9.0-Portable-Windows-x64.zip`
+- `AstroFocusStudio-3.9.0-Source.zip`
 - `SHA256SUMS.txt`
 - `BUILD_INFO.txt`
 
-Ein Tag wie `v3.8.8` veröffentlicht dieselben, zuvor geprüften Dateien zusätzlich als
+Ein Tag wie `v3.9.0` veröffentlicht dieselben, zuvor geprüften Dateien zusätzlich als
 GitHub Release. Alternativ kann der Workflow manuell mit `publish_release: true` und
-`release_tag: v3.8.8` gestartet werden; der Tag wird dann nach allen erfolgreichen
+`release_tag: v3.9.0` gestartet werden; der Tag wird dann nach allen erfolgreichen
 Tests am geprüften Commit erstellt, sofern er noch nicht existiert.
 
 ## Lokaler Build
@@ -82,7 +82,7 @@ Veröffentlichung sollte der Rechteinhaber eine passende `LICENSE` ergänzen.
 
 The native test job selects a versioned Clang compiler explicitly and embeds the
 sanitizer runtimes. Its logs are uploaded on every success or failure as
-`AstroFocusStudio-3.8.8-Native-Sanitizer-Logs`.
+`AstroFocusStudio-3.9.0-Native-Sanitizer-Logs`.
 
 ## CI repository integrity
 
@@ -105,3 +105,11 @@ or Windows Installer transaction state cannot leak into the raw MSI test. See
 ### Desktop shortcut
 
 The per-machine WiX installer creates **AstroFocus Studio.lnk** on the public Windows desktop. Both the Burn and raw-MSI smoke tests verify its target and working directory, repair preserves it, and uninstall removes it.
+
+## Continuous focus tracking
+
+The new **Nachführung** expert page provides predictive, image-based, and hybrid focus tracking. It reuses normal AstroFocus live frames, applies bounded micro-corrections only after an exposure has completed, waits for settling, and accepts a correction only after improved verification frames. Failed probes return to the original position and can optionally fall back to a complete autofocus run.
+
+The responsive page keeps labels, numeric fields, status text, controls, and its position/target chart inside the supported minimum window geometry. Long diagnostics scroll and the chart retains a minimum height.
+
+This 3.9.0 implementation does not yet consume a separate guide/OAG/ONAG stream and never moves the focuser during an active main exposure. See [`docs/CONTINUOUS_FOCUS_DE.md`](docs/CONTINUOUS_FOCUS_DE.md) for the detailed German specification and limitations.

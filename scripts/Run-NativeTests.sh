@@ -87,8 +87,9 @@ compile_and_run() {
     fi
 }
 
-compile_and_run tests/command_line_args_validation_388.cpp command_line_args_validation_388
-compile_and_run tests/frontend_logic_validation_388.cpp frontend_logic_validation_388
-compile_and_run tests/actual_backend_validation_388.cpp actual_backend_validation_388
+compile_and_run tests/command_line_args_validation_390.cpp command_line_args_validation_390
+compile_and_run tests/frontend_logic_validation_390.cpp frontend_logic_validation_390
+compile_and_run tests/actual_backend_validation_390.cpp actual_backend_validation_390
+compile_and_run tests/continuous_focus_logic_validation_390.cpp continuous_focus_logic_validation_390
 
 echo "Alle nativen ASan-/UBSan-Tests wurden bestanden."

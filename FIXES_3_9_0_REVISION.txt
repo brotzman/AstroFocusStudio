@@ -1,0 +1,30 @@
+AstroFocus Studio 3.9.0 – technische Revisionsübersicht
+
+Diese Revision bündelt die kontinuierliche Fokusnachführung, das normale Windows-Taskleistenverhalten, die WiX-Desktopverknüpfung, den getesteten MSI-/Burn-Releaseprozess und die vorherigen Sicherheitskorrekturen in einer neuen Minor-Version.
+
+Zentrale Invarianten
+--------------------
+- Alle sieben Windows-x64-Programme werden aus demselben Quellstand gebaut.
+- Frontend und Engine melden exakt Version 3.9.0; der Workflow verwendet PRODUCT_VERSION 3.9.0 und BUNDLE_VERSION 3.9.0.0.
+- Der Release-Tag muss exakt v3.9.0 lauten.
+- Das MSI verwendet den bestehenden UpgradeCode und kann ältere 3.x-Installationen als Major Upgrade ersetzen.
+- Der Update-Manifestgenerator akzeptiert standardmäßig Installationen ab 3.8.1.
+- Kontinuierliche Fokusbewegungen sind während einer Belichtung, eines Autofokuslaufs, einer Kalibrierung oder eines ASCOM-Setupdialogs gesperrt.
+- Nicht bestätigte Mikrokorrekturen werden zurückgenommen; mehrfache Uneindeutigkeit pausiert fail-closed oder fordert einen vollständigen Autofokus an.
+
+Nicht durch die lokale Cross-Build-Umgebung ersetzbar
+-----------------------------------------------------
+Reale ASCOM- und ToupTek-Hardware, Windows-UAC/Registry, Authenticode, Standby/Fortsetzung, Mehrschirm-/DPI-Sichtprüfung und nächtlicher Dauerbetrieb müssen auf Windows-Zielsystemen geprüft werden. Der GitHub-Windows-Workflow übernimmt die verbindlichen MSI- und Burn-Smoke-Tests.
+
+Lokale Verifikation des 3.9.0-Quellstands
+------------------------------------------
+- Strenger Windows-x64-Cross-Build mit /W4 /WX /O2 /GS: bestanden.
+- Erzeugte Programme: 7/7.
+- Reproduzierbarer Doppelbuild: 7/7 SHA-256-identisch.
+- PE32+/x86-64, Zeitstempel 0, ASLR, High-Entropy-ASLR und DEP/NX: 7/7.
+- Native ASan-/UBSan-Prüfungen: 269/269.
+- Python-, Workflow-, Layout-, Installer- und Versionsprüfungen: 334/334.
+- Automatisierte Einzelprüfungen insgesamt: 603/603.
+- Clang Static Analyzer für Frontend, Engine, Fokussierer-Setup, beide Gerätehostvarianten und beide Launcher: 0 Warnungen.
+- Workflow-YAML und beide WiX-XML-Dateien: syntaktisch geprüft.
+- Keine veralteten Versionsangaben oder Testdateinamen des Vorgängerstands im aktuellen Quellstand.

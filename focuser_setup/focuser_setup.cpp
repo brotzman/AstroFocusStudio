@@ -1,4 +1,4 @@
-// AstroFocus Studio 3.8.8 - isolated ASCOM chooser and focuser setup helper.
+// AstroFocus Studio 3.9.0 - isolated ASCOM chooser and focuser setup helper.
 // Default mode opens the selected focuser SetupDialog. With --choose it opens
 // the ASCOM Chooser in a visible foreground child process and writes the selected
 // ProgID to a caller-supplied UTF-16 result file.

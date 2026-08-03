@@ -1,11 +1,11 @@
-AstroFocus Studio 3.8.8 – GitHub-Upload
+AstroFocus Studio 3.9.0 – GitHub-Upload
 
 1. ZIP vollständig entpacken.
 2. Auf GitHub ein leeres Repository ohne automatisch erzeugte Dateien anlegen.
 3. Den gesamten Inhalt einschließlich des versteckten Ordners .github committen.
 4. Auf den Branch main pushen.
 5. Unter GitHub Actions den Workflow "Build and test Windows installer" abwarten.
-6. Das fertige Paket aus dem Artifact "AstroFocusStudio-3.8.8-Windows-x64" laden.
+6. Das fertige Paket aus dem Artifact "AstroFocusStudio-3.9.0-Windows-x64" laden.
 
 Ausführliche Anleitung: docs/GITHUB_UPLOAD_DE.md
 
@@ -17,7 +17,7 @@ Für reguläre Weiterentwicklung wird dennoch ein Upload per git commit/push emp
 Release manuell veröffentlichen:
 1. Actions → "Build and test Windows installer" → Run workflow öffnen.
 2. publish_release aktivieren.
-3. release_tag auf v3.8.8 belassen.
+3. release_tag auf v3.9.0 belassen.
 4. Workflow starten. Erst nach allen erfolgreichen Tests werden Tag und Release erstellt.
 
 Der MSI- und Setup-Installer legt automatisch "AstroFocus Studio" auf dem öffentlichen Desktop an.

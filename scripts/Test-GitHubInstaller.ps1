@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$ProductVersion = '3.8.8',
+    [string]$ProductVersion = '3.9.0',
     [ValidateSet('Bundle', 'Msi')][string]$Mode = 'Bundle',
     [string]$RepositoryRoot = ''
 )

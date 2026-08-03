@@ -45,11 +45,11 @@ Das Skript `scripts/Test-GitHubInstaller.ps1` akzeptiert nur noch die expliziten
 ## Artefakte und Logs
 
 Die Buildausgaben werden als internes Artefakt
-`AstroFocusStudio-3.8.8-Installer-Test-Input` an beide Testjobs übertragen. Die Logs
+`AstroFocusStudio-3.9.0-Installer-Test-Input` an beide Testjobs übertragen. Die Logs
 werden getrennt hochgeladen:
 
-- `AstroFocusStudio-3.8.8-Bundle-Test-Logs`,
-- `AstroFocusStudio-3.8.8-MSI-Test-Logs`.
+- `AstroFocusStudio-3.9.0-Bundle-Test-Logs`,
+- `AstroFocusStudio-3.9.0-MSI-Test-Logs`.
 
 Ein GitHub Release wird erst erstellt, wenn Build, Bundle-Test und MSI-Test bestanden
 sind.

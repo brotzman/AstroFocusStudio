@@ -8,7 +8,7 @@ call :build device_host || exit /b 1
 call :build tools || exit /b 1
 
 echo.
-echo AstroFocus Studio 3.8.8 wurde vollständig erstellt: 7 Windows-x64-Programme.
+echo AstroFocus Studio 3.9.0 wurde vollständig erstellt: 7 Windows-x64-Programme.
 exit /b 0
 
 :build

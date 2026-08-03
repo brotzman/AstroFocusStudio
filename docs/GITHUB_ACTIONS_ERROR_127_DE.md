@@ -13,7 +13,7 @@ Der Workflow verwendet deshalb jetzt:
 
 Das Diagnoseartefakt heißt:
 
-`AstroFocusStudio-3.8.8-Native-Sanitizer-Logs`
+`AstroFocusStudio-3.9.0-Native-Sanitizer-Logs`
 
 Es enthält:
 

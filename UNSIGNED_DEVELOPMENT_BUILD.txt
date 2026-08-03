@@ -1,4 +1,4 @@
-AstroFocus Studio 3.8.8 – UNSIGNIERTER ENTWICKLUNGSBUILD
+AstroFocus Studio 3.9.0 – UNSIGNIERTER ENTWICKLUNGSBUILD
 
 Dieses Paket ist nicht mit einem öffentlichen Code-Signing-Zertifikat signiert.
 Der Entwicklungsmodus ist nur aktiv, wenn diese Markierung sowohl im Setup-Bundle

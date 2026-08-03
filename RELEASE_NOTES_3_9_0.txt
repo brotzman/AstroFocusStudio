@@ -1,0 +1,31 @@
+AstroFocus Studio 3.9.0 – kontinuierliche Fokusnachführung und Windows-Integration
+
+Wesentliche Neuerungen
+----------------------
+- Neuer Expertenreiter „Nachführung“ mit prädiktivem, bildbasiertem und hybridem Modus.
+- Normale Livebilder werden in einem robusten FWHM-/HFR-Medianfenster bewertet. Für Mikrokorrekturen wird keine zusätzliche Fokusserie aufgenommen.
+- Der Fokussierer wird ausschließlich nach Abschluss einer Belichtung und vor dem nächsten Bild bewegt.
+- Jede Mikrokorrektur wird durch normale Folgebilder bestätigt. Verschlechterungen führen zur sicheren Rückfahrt; wiederholte Uneindeutigkeit kann einen vollständigen Autofokus auslösen.
+- Temperaturmodell, Messfenster, Totzone, maximale Korrektur, Mindestqualität, Mindestverbesserung und Beruhigungszeit sind konfigurierbar und persistent.
+- Status-API und Oberfläche zeigen Zustand, Begründung, Regelqualität, Referenz, geschätzte Abweichung, Drift, Ziel sowie angenommene und verworfene Korrekturen.
+- Responsive Zweispaltenanordnung, berechnete Feldbreiten, umbrechende Hinweise, scrollbarerer Status und eine garantierte Diagramm-Mindesthöhe vermeiden Clipping im unterstützten Fensterbereich.
+
+Windows- und Installerverbesserungen
+------------------------------------
+- Das Hauptfenster verhält sich wie ein normales Windows-Fenster und bleibt beim Minimieren in der Taskleiste sichtbar.
+- Der WiX-Installer legt eine reparierbare Verknüpfung „AstroFocus Studio“ auf dem öffentlichen Desktop an und entfernt sie bei der Deinstallation.
+- MSI und Burn-Setup werden auf getrennten, frischen Windows-Runnern installiert, repariert, per Health-Check geprüft und deinstalliert.
+- Der GitHub-Workflow kann nach allen bestandenen Tests den passenden Tag v3.9.0 erzeugen und das Release veröffentlichen oder aktualisieren.
+- Der no-CRT-Prozessstart initialisiert das /GS-Sicherheitscookie vor jeder geschützten Anwendungsfunktion.
+
+Sicherheits- und Logikkorrekturen
+--------------------------------
+- Installer und Updater teilen eine globale Wartungssperre und können nicht parallel gegeneinander arbeiten.
+- Der ASCOM-Fokussierer-Setupdialog reserviert atomar einen sicheren Enginezustand und blockiert konkurrierende Verbindungen, Bewegungen und Fokusoperationen.
+- Doppelte, beschädigte oder unvollständige Kommandozeilen- und API-Parameter werden fail-closed abgelehnt.
+- Updatepakete werden über HTTPS, signiertes Manifest, SHA-256, sichere Extraktion, Health-Checks und Rollback abgesichert.
+- Der Update-Manifestgenerator unterstützt standardmäßig direkte Aktualisierungen ab Version 3.8.1.
+
+Wichtige Abgrenzung
+-------------------
+Die kontinuierliche Fokusnachführung nutzt in 3.9.0 normale AstroFocus-Livebilder und das gelernte Temperaturmodell. Eine separate Guidekamera-, OAG- oder ONAG-Echtzeitquelle ist noch nicht gekoppelt. Während einer laufenden Hauptbelichtung wird der Fokussierer bewusst niemals bewegt.

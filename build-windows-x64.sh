@@ -30,4 +30,4 @@ build_one backend backend.cpp backend.obj AstroFocusEngine.exe "kernel32.lib use
 build_one focuser_setup focuser_setup.cpp focuser_setup.obj AstroFocusFocuserSetup.exe "kernel32.lib user32.lib ole32.lib oleaut32.lib msvcrt.lib"
 "$ROOT/device_host/build-windows-x64.sh"
 "$ROOT/tools/build-windows-x64.sh"
-echo "Windows-x64-Build 3.8.8 abgeschlossen."
+echo "Windows-x64-Build 3.9.0 abgeschlossen."

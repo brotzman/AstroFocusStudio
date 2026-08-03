@@ -1,4 +1,4 @@
-// AstroFocus Studio 3.8.8 no-CRT process entry.
+// AstroFocus Studio 3.9.0 no-CRT process entry.
 // This translation unit MUST be compiled with /GS- because the security
 // cookie has to be initialized before any /GS-protected function begins.
 extern "C" {

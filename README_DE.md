@@ -1,8 +1,8 @@
-# AstroFocus Studio 3.8.8
+# AstroFocus Studio 3.9.0
 
 AstroFocus Studio ist eine native Windows-x64-Anwendung für Live-Fokus, statistisch ausgewerteten Autofokus, Bahtinov-Unterstützung, Fokusautomation und reproduzierbare Simulatorprüfungen.
 
-## Korrekturen in 3.8.8
+## Korrekturen in 3.9.0
 
 ### Lokale API und Eingabevalidierung
 
@@ -48,7 +48,7 @@ Der GitHub-Actions-Workflow führt einen vollständigen Windows-x64-Build aus un
 
 ## Bereinigtes Quellpaket
 
-Dieses Quellpaket enthält ausschließlich den Stand 3.8.8. Historische Layoutbilder,
+Dieses Quellpaket enthält ausschließlich den Stand 3.9.0. Historische Layoutbilder,
 alte Prüfberichte, Teststände früherer Versionen und kompilierte EXE-Dateien wurden
 entfernt. Die sieben fertigen Programme, das MSI, das Burn-Setup und die portable Version werden
 nach erfolgreichem GitHub-Actions-Lauf als geprüftes Workflow-Artefakt bereitgestellt.
@@ -67,7 +67,7 @@ build-all-windows-x64.bat
 
 Beide Sammel-Builds erstellen alle sieben Windows-x64-Programme.
 
-Die aktuellen 3.8.8-Prüfungen befinden sich gesammelt unter `tests`.
+Die aktuellen 3.9.0-Prüfungen befinden sich gesammelt unter `tests`.
 
 
 ## GitHub Repository und Installerbuild
@@ -88,4 +88,22 @@ Neustartstatus die direkte MSI-Installation nicht blockieren. Details stehen in
 
 ### Tag und GitHub Release veröffentlichen
 
-Der Workflow veröffentlicht geprüfte Dateien weiterhin automatisch bei einem Push des Tags `v3.8.8`. Zusätzlich kann unter **Actions → Build and test Windows installer → Run workflow** die Option **publish_release** aktiviert werden. Der Workflow baut und testet zuerst alle Pakete, erzeugt danach bei Bedarf den Tag `v3.8.8` am geprüften Commit und erstellt oder aktualisiert das GitHub Release. Ein Tag, der nicht zur `PRODUCT_VERSION` passt, wird abgelehnt.
+Der Workflow veröffentlicht geprüfte Dateien weiterhin automatisch bei einem Push des Tags `v3.9.0`. Zusätzlich kann unter **Actions → Build and test Windows installer → Run workflow** die Option **publish_release** aktiviert werden. Der Workflow baut und testet zuerst alle Pakete, erzeugt danach bei Bedarf den Tag `v3.9.0` am geprüften Commit und erstellt oder aktualisiert das GitHub Release. Ein Tag, der nicht zur `PRODUCT_VERSION` passt, wird abgelehnt.
+
+### Robuste CI-Prüfung der Desktopverknüpfung
+
+Die Windows-Installer-Tests warten kurz auf die Veröffentlichung der gemeinsamen Desktopverknüpfung, normalisieren Zielpfade und verwenden bei Bedarf eine zweite Windows-Shell-API. Damit führen abweichende COM-Darstellungen auf GitHub-Runnern nicht mehr zu einem Fehlalarm, während Ziel, Existenz und Deinstallation weiterhin geprüft werden.
+
+## Kontinuierliche Fokusnachführung für Aufnahmeserien
+
+Der Reiter **Nachführung** ergänzt drei Expertenmodi:
+
+- **Prädiktiv:** kleine Korrekturen aus dem gelernten Temperatur-/Positionsmodell.
+- **Bildbasiert:** robuste FWHM-/HFR-Medianbewertung der normalen Livebilder.
+- **Hybrid:** prädiktive Richtungsinformation mit bildbasierter Bestätigung.
+
+Motorbewegungen erfolgen ausschließlich zwischen abgeschlossenen Belichtungen. Jede Mikrokorrektur ist durch Totzone, sichere Fokuszone und maximale Schrittzahl begrenzt und muss sich durch mehrere normale Kontrollbilder bestätigen. Nicht bestätigte Proben werden zurückgenommen; optional startet nach wiederholter Uneindeutigkeit ein vollständiger Autofokus. Manuelle Bewegungen und Filteroffsets bauen die Referenz neu auf.
+
+Die neue Oberfläche zeigt Regelzustand, Begründung, Regelqualität, geschätzte Abweichung, Drift, Position, Ziel und Korrekturmarken. Ihre responsive Zweispaltenstruktur, berechneten Feldbreiten, umbrochenen Hinweise und das mindestens 100 Pixel hohe Diagramm verhindern Clipping am unterstützten Mindestfenster.
+
+Eine separate Guide-/OAG-/ONAG-Echtzeitquelle ist in 3.9.0 noch nicht angebunden. Die Funktion ist daher eine unterbrechungsarme Zwischenbild-Nachführung im AstroFocus-Livestream und bewegt den Fokussierer niemals während einer laufenden Hauptbelichtung. Details: [`docs/CONTINUOUS_FOCUS_DE.md`](docs/CONTINUOUS_FOCUS_DE.md).

@@ -1,4 +1,4 @@
-// AstroFocus Studio 3.8.8 isolated ASCOM device host.
+// AstroFocus Studio 3.9.0 isolated ASCOM device host.
 // Built twice as AstroFocusCameraHost.exe and AstroFocusFocuserHost.exe.
 
 extern "C" {

@@ -1,7 +1,7 @@
 ﻿[CmdletBinding()]
 param(
-    [string]$ProductVersion = '3.8.8',
-    [string]$BundleVersion = '3.8.8.0',
+    [string]$ProductVersion = '3.9.0',
+    [string]$BundleVersion = '3.9.0.0',
     [string]$WixVersion = '5.0.2',
     [switch]$SkipPythonTests
 )
@@ -23,7 +23,7 @@ $payloadFiles = [ordered]@{
     'AstroFocusSetup.ps1'            = 'installer\AstroFocusSetup.ps1'
     'update-public-key.cer'           = 'updater\update-public-key.cer'
     'README_DE.md'                    = 'README_DE.md'
-    'KNOWN_LIMITATIONS_3_8_8.txt'     = 'KNOWN_LIMITATIONS_3_8_8.txt'
+    'KNOWN_LIMITATIONS_3_9_0.txt'     = 'KNOWN_LIMITATIONS_3_9_0.txt'
     'UNSIGNED_DEVELOPMENT_BUILD.txt'  = 'UNSIGNED_DEVELOPMENT_BUILD.txt'
 }
 

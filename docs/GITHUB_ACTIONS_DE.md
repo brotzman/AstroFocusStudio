@@ -4,9 +4,9 @@
 
 Der Linux-Job kompiliert und startet diese drei Testprogramme mit ASan und UBSan:
 
-- `tests/command_line_args_validation_388.cpp`
-- `tests/frontend_logic_validation_388.cpp`
-- `tests/actual_backend_validation_388.cpp`
+- `tests/command_line_args_validation_390.cpp`
+- `tests/frontend_logic_validation_390.cpp`
+- `tests/actual_backend_validation_390.cpp`
 
 Ein Fehler, Speicherzugriffsproblem oder undefiniertes Verhalten stoppt den Workflow,
 bevor ein Windows-Paket gebaut wird.
@@ -43,7 +43,7 @@ Der Release-Job läuft entweder bei einem Tag mit `v`-Präfix oder nach einem ma
 Windows-Job geprüfte Artefakt herunter, prüft `SHA256SUMS.txt` und erstellt oder
 aktualisiert das GitHub Release. Bei manueller Veröffentlichung wird ein noch nicht
 vorhandener Tag am getesteten Commit erzeugt. Der Tag muss exakt `v` plus
-`PRODUCT_VERSION` entsprechen, bei 3.8.8 also `v3.8.8`.
+`PRODUCT_VERSION` entsprechen, bei 3.9.0 also `v3.9.0`.
 
 ## Nicht abgedeckt
 

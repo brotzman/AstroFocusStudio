@@ -14,7 +14,7 @@ versteckte Ordner `.github`, denn darin befindet sich der Windows-Buildworkflow.
 ```bash
 git init
 git add .
-git commit -m "AstroFocus Studio 3.8.8"
+git commit -m "AstroFocus Studio 3.9.0"
 git branch -M main
 git remote add origin https://github.com/DEIN-NAME/DEIN-REPOSITORY.git
 git push -u origin main
@@ -30,19 +30,19 @@ Nach erfolgreichem Workflow:
 1. GitHub-Repository öffnen.
 2. **Actions** wählen.
 3. Den neuesten erfolgreichen Lauf öffnen.
-4. Unter **Artifacts** `AstroFocusStudio-3.8.8-Windows-x64` herunterladen.
+4. Unter **Artifacts** `AstroFocusStudio-3.9.0-Windows-x64` herunterladen.
 
 Die Installerprotokolle liegen getrennt im Artefakt
-`AstroFocusStudio-3.8.8-Installer-Logs`.
+`AstroFocusStudio-3.9.0-Installer-Logs`.
 
 ## GitHub Release erzeugen
 
-Nach einem erfolgreichen normalen Build kann Version 3.8.8 als Tag veröffentlicht
+Nach einem erfolgreichen normalen Build kann Version 3.9.0 als Tag veröffentlicht
 werden:
 
 ```bash
-git tag v3.8.8
-git push origin v3.8.8
+git tag v3.9.0
+git push origin v3.9.0
 ```
 
 Der Release-Job prüft `SHA256SUMS.txt` und hängt die bereits im Windows-Job gebauten

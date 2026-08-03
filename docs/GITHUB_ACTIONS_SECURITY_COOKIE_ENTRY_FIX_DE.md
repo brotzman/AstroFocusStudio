@@ -34,7 +34,7 @@ Fokussierer-Setup, beide Gerätehosts sowie Setup- und Updater-Launcher.
 
 ## Regression
 
-`tests/security_cookie_startup_validation_388.py` prüft unter anderem:
+`tests/security_cookie_startup_validation_390.py` prüft unter anderem:
 
 - genau eine Definition von `WinMainCRTStartup`,
 - Initialisierung vor dem Aufruf der geschützten Anwendungslogik,
