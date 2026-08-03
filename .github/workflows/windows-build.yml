@@ -15,8 +15,8 @@ on:
         type: boolean
       release_tag:
         description: 'Release-Tag; muss zur PRODUCT_VERSION passen'
-        required: true
-        default: 'v3.9.0'
+        required: false
+        default: ''
         type: string
 
 permissions:
@@ -27,12 +27,34 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PRODUCT_VERSION: '3.9.0'
-  BUNDLE_VERSION: '3.9.0.0'
   WIX_VERSION: '5.0.2'
 
 jobs:
+  metadata:
+    name: Read repository version
+    runs-on: ubuntu-24.04
+    outputs:
+      product: ${{ steps.version.outputs.product }}
+      bundle: ${{ steps.version.outputs.bundle }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Validate VERSION
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(tr -d '\r\n' < VERSION)"
+          [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo "Invalid VERSION: $version" >&2; exit 2; }
+          echo "product=$version" >> "$GITHUB_OUTPUT"
+          echo "bundle=$version.0" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
   native-tests:
+    needs: metadata
+    env:
+      PRODUCT_VERSION: ${{ needs.metadata.outputs.product }}
     name: Native sanitizer tests
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -91,7 +113,10 @@ jobs:
 
   windows-build:
     name: Build Windows binaries and packages
-    needs: native-tests
+    needs: [metadata, native-tests]
+    env:
+      PRODUCT_VERSION: ${{ needs.metadata.outputs.product }}
+      BUNDLE_VERSION: ${{ needs.metadata.outputs.bundle }}
     runs-on: windows-2022
     timeout-minutes: 25
     steps:
@@ -161,13 +186,13 @@ jobs:
             'scripts\remove_legacy_version_files.py',
             'scripts\Test-GitHubInstaller.ps1',
             'scripts\Run-NativeTests.sh',
-            'tests\github_workflow_validation_390.py',
-            'tests\version_consistency_validation_390.py',
-            'tests\continuous_focus_validation_390.py',
-            'tests\continuous_focus_layout_validation_390.py',
-            'tests\frontend_startup_resilience_validation_390.py',
-            'tests\frontend_settings_persistence_validation_390.py',
-            'tests\continuous_focus_logic_validation_390.cpp',
+            'tests\github_workflow_validation.py',
+            'tests\version_consistency_validation.py',
+            'tests\continuous_focus_validation.py',
+            'tests\continuous_focus_layout_validation.py',
+            'tests\frontend_startup_resilience_validation.py',
+            'tests\frontend_settings_persistence_validation.py',
+            'tests\continuous_focus_logic_validation.cpp',
             'build-all-windows-x64.bat',
             'frontend\build-windows-x64.bat',
             'frontend\kernel32.def',
@@ -181,7 +206,7 @@ jobs:
             'updater\update-public-key.cer',
             'release\New-ReleaseManifest.ps1',
             'README_DE.md',
-            'KNOWN_LIMITATIONS_3_9_0.txt',
+            'KNOWN_LIMITATIONS.txt',
             'UNSIGNED_DEVELOPMENT_BUILD.txt'
           )
           $optionalMetadata = @('.gitattributes', '.gitignore')
@@ -289,7 +314,9 @@ jobs:
 
   bundle-test:
     name: Test Burn bundle on clean Windows runner
-    needs: windows-build
+    needs: [metadata, windows-build]
+    env:
+      PRODUCT_VERSION: ${{ needs.metadata.outputs.product }}
     runs-on: windows-2022
     timeout-minutes: 15
     steps:
@@ -322,7 +349,9 @@ jobs:
 
   msi-test:
     name: Test raw MSI on clean Windows runner
-    needs: windows-build
+    needs: [metadata, windows-build]
+    env:
+      PRODUCT_VERSION: ${{ needs.metadata.outputs.product }}
     runs-on: windows-2022
     timeout-minutes: 15
     steps:
@@ -358,7 +387,9 @@ jobs:
     if: >-
       startsWith(github.ref, 'refs/tags/v') ||
       (github.event_name == 'workflow_dispatch' && inputs.publish_release == true)
-    needs: [windows-build, bundle-test, msi-test]
+    needs: [metadata, windows-build, bundle-test, msi-test]
+    env:
+      PRODUCT_VERSION: ${{ needs.metadata.outputs.product }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -380,11 +411,11 @@ jobs:
           REQUESTED_TAG: ${{ inputs.release_tag }}
         run: |
           set -euo pipefail
-          expected_tag="v${PRODUCT_VERSION}"
+          expected_tag="${{ needs.metadata.outputs.tag }}"
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             release_tag="$GITHUB_REF_NAME"
           else
-            release_tag="$REQUESTED_TAG"
+            release_tag="${REQUESTED_TAG:-$expected_tag}"
           fi
           if [[ -z "$release_tag" ]]; then
             echo 'No release tag was supplied.' >&2
