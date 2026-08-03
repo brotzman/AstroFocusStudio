@@ -4,9 +4,9 @@
 
 Der Linux-Job kompiliert und startet diese drei Testprogramme mit ASan und UBSan:
 
-- `tests/command_line_args_validation_390.cpp`
-- `tests/frontend_logic_validation_390.cpp`
-- `tests/actual_backend_validation_390.cpp`
+- `tests/command_line_args_validation.cpp`
+- `tests/frontend_logic_validation.cpp`
+- `tests/actual_backend_validation.cpp`
 
 Ein Fehler, Speicherzugriffsproblem oder undefiniertes Verhalten stoppt den Workflow,
 bevor ein Windows-Paket gebaut wird.

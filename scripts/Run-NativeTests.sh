@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="${RUNNER_TEMP:-$ROOT/.native-test-build}/astrofocus-native-tests"
-CXX="${CXX:-clang++-18}"
+CXX="${CXX:-clang++}"
 
 if ! command -v "$CXX" >/dev/null 2>&1; then
     echo "ERROR: C++ compiler '$CXX' was not found." >&2
@@ -87,9 +87,9 @@ compile_and_run() {
     fi
 }
 
-compile_and_run tests/command_line_args_validation_390.cpp command_line_args_validation_390
-compile_and_run tests/frontend_logic_validation_390.cpp frontend_logic_validation_390
-compile_and_run tests/actual_backend_validation_390.cpp actual_backend_validation_390
-compile_and_run tests/continuous_focus_logic_validation_390.cpp continuous_focus_logic_validation_390
+compile_and_run tests/command_line_args_validation.cpp command_line_args_validation
+compile_and_run tests/frontend_logic_validation.cpp frontend_logic_validation
+compile_and_run tests/actual_backend_validation.cpp actual_backend_validation
+compile_and_run tests/continuous_focus_logic_validation.cpp continuous_focus_logic_validation
 
 echo "Alle nativen ASan-/UBSan-Tests wurden bestanden."

@@ -1,0 +1,16 @@
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{bat,cmd,ps1,wxs,def}]
+end_of_line = crlf
+
+[*.{sh,py,cpp,inc,s,md,txt,yml,yaml}]
+end_of_line = lf
+
+[*.{cpp,inc}]
+indent_style = space
+indent_size = 4

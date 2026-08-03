@@ -1,0 +1,7 @@
+AstroFocus Studio 3.9.0 – UNSIGNIERTER ENTWICKLUNGSBUILD
+
+Dieses Paket ist nicht mit einem öffentlichen Code-Signing-Zertifikat signiert.
+Der Entwicklungsmodus ist nur aktiv, wenn diese Markierung sowohl im Setup-Bundle
+als auch im Payload vorhanden ist. Für eine Produktionsveröffentlichung muss diese
+Datei entfernt, das Update-Zertifikat fest im Installer gepinnt und jede Binärdatei
+sowie jedes Installationspaket signiert werden.

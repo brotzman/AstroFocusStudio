@@ -65,9 +65,11 @@ Build unter Windows mit LLVM/Clang im Developer Command Prompt:
 build-all-windows-x64.bat
 ```
 
-Beide Sammel-Builds erstellen alle sieben Windows-x64-Programme.
+Beide Sammel-Builds erstellen alle sieben Windows-x64-Programme unter `out/windows-x64/bin`; die Quellverzeichnisse bleiben frei von Buildartefakten.
 
-Die aktuellen 3.9.0-Prüfungen befinden sich gesammelt unter `tests`.
+Die versionsunabhängig benannten Prüfungen befinden sich unter `tests`; `VERSION` ist die einzige Quelle für die Produktversion.
+
+Technische Einstiegsdokumente sind unter [`docs/README.md`](docs/README.md) zusammengefasst.
 
 
 ## GitHub Repository und Installerbuild

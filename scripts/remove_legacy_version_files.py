@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Remove superseded 3.8.8 files and obsolete root-only artifacts.
+"""Remove explicitly allow-listed superseded files and obsolete root-only artifacts.
 
 This is intentionally an allow-list cleanup. It never searches for and deletes
 arbitrary files containing an old version string. Generated integrity files are
@@ -14,9 +14,10 @@ from pathlib import Path
 import sys
 
 CURRENT_MARKERS = (
-    Path("KNOWN_LIMITATIONS_3_9_0.txt"),
-    Path("RELEASE_NOTES_3_9_0.txt"),
-    Path("tests/version_consistency_validation_390.py"),
+    Path("VERSION"),
+    Path("KNOWN_LIMITATIONS.txt"),
+    Path("RELEASE_NOTES.txt"),
+    Path("tests/version_consistency_validation.py"),
 )
 
 GENERATED_ROOT_FILES = (
@@ -31,6 +32,9 @@ OBSOLETE_PATCH_FILES = (
 )
 
 LEGACY_FILES = (
+    Path("KNOWN_LIMITATIONS_3_9_0.txt"),
+    Path("RELEASE_NOTES_3_9_0.txt"),
+    Path("tests/version_consistency_validation_390.py"),
     Path("FIXES_3_8_8_REVISION.txt"),
     Path("INSTALLER_FIX_3_8_8.txt"),
     Path("KNOWN_LIMITATIONS_3_8_8.txt"),
@@ -80,7 +84,8 @@ def main() -> int:
 
     missing_markers = [str(path) for path in CURRENT_MARKERS if not (root / path).is_file()]
     if missing_markers:
-        lines.append("ERROR: current 3.9.0 repository markers are missing:")
+        version = (root / "VERSION").read_text(encoding="utf-8").strip() if (root / "VERSION").is_file() else "unknown"
+        lines.append(f"ERROR: current {version} repository markers are missing:")
         lines.extend(f"  - {path}" for path in missing_markers)
         _write_log(args.log, root, lines)
         print("\n".join(lines), file=sys.stderr)

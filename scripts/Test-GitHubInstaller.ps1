@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$ProductVersion = '3.9.0',
+    [string]$ProductVersion = '',
     [ValidateSet('Bundle', 'Msi')][string]$Mode = 'Bundle',
     [string]$RepositoryRoot = ''
 )
@@ -12,6 +12,7 @@ if ([string]::IsNullOrWhiteSpace($RepositoryRoot)) {
     $RepositoryRoot = Split-Path -Parent $PSScriptRoot
 }
 $RepositoryRoot = [IO.Path]::GetFullPath($RepositoryRoot)
+if ([string]::IsNullOrWhiteSpace($ProductVersion)) { $ProductVersion = (& (Join-Path $PSScriptRoot 'Get-RepositoryVersion.ps1') -RepositoryRoot $RepositoryRoot).Product }
 $DistRoot = Join-Path $RepositoryRoot 'dist'
 $ArtifactRoot = Join-Path $RepositoryRoot 'artifacts'
 $PayloadRoot = Join-Path $ArtifactRoot 'payload'
@@ -387,7 +388,7 @@ function Invoke-FrontendStartupCheck {
                 throw "AstroFocusStudio.exe wurde während des Starts beendet (Exitcode $($process.ExitCode))."
             }
             $process.Refresh()
-            if ($process.MainWindowHandle -ne [IntPtr]::Zero -and $process.MainWindowTitle -like 'AstroFocus Studio 3.9.0*') {
+            if ($process.MainWindowHandle -ne [IntPtr]::Zero -and $process.MainWindowTitle -like "AstroFocus Studio $ProductVersion*") {
                 $windowFound = $true
                 break
             }

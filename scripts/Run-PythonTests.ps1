@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param(
     [string]$RepositoryRoot = (Split-Path -Parent $PSScriptRoot),
-    [string]$LogPath = ''
+    [string]$LogPath = '',
+    [ValidateSet('All', 'Source', 'PostBuild')]
+    [string]$Phase = 'All'
 )
 
 Set-StrictMode -Version Latest
@@ -46,17 +48,22 @@ if ($cleanup.ExitCode -ne 0) {
     throw "Bereinigung alter Versionsdateien fehlgeschlagen (Exitcode $($cleanup.ExitCode)): $cleanupLog"
 }
 
-$currentSuffix = '_390.py'
-$versionTestName = 'version_consistency_validation_390.py'
-$allCurrentTests = @(Get-ChildItem -LiteralPath $testsDirectory -Filter "*$currentSuffix" -File | Sort-Object Name)
+$versionTestName = 'version_consistency_validation.py'
+$allCurrentTests = @(Get-ChildItem -LiteralPath $testsDirectory -Filter '*_validation.py' -File | Sort-Object Name)
+$postBuildNames = @('installer_bootstrap_validation.py', 'release_integrity_validation.py')
+if ($Phase -eq 'Source') {
+    $allCurrentTests = @($allCurrentTests | Where-Object Name -NotIn $postBuildNames)
+} elseif ($Phase -eq 'PostBuild') {
+    $allCurrentTests = @($allCurrentTests | Where-Object Name -In $postBuildNames)
+}
 $versionTest = @($allCurrentTests | Where-Object Name -EQ $versionTestName)
 $remainingTests = @($allCurrentTests | Where-Object Name -NE $versionTestName)
-$tests = @($versionTest + $remainingTests)
-if ($versionTest.Count -ne 1) {
+$tests = if ($Phase -eq 'PostBuild') { @($remainingTests) } else { @($versionTest + $remainingTests) }
+if ($Phase -ne 'PostBuild' -and $versionTest.Count -ne 1) {
     throw "Versionskonsistenztest fehlt oder ist doppelt vorhanden: $versionTestName"
 }
 if ($tests.Count -eq 0) {
-    throw 'Keine Python-Regressionstests der Version 3.9.0 gefunden.'
+    throw 'Keine Python-Regressionstests gefunden.'
 }
 
 function Write-TestOutput([string]$Text) {
@@ -103,5 +110,5 @@ foreach ($test in $tests) {
     }
 }
 
-"Alle $($tests.Count) Python-Testprogramme wurden bestanden." |
+"Alle $($tests.Count) Python-Testprogramme der Phase $Phase wurden bestanden." |
     Tee-Object -FilePath $LogPath -Append | Write-Host

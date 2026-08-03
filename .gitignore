@@ -1,0 +1,50 @@
+# Native build outputs
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.map
+*.d
+*.profraw
+*.profdata
+*.plist
+
+# Executables are built by GitHub Actions and are not committed
+*.exe
+*.msi
+*.msix
+*.wixpdb
+
+# Generated package folders
+artifacts/
+dist/
+build/
+out/
+installer/payload/
+installer/out/
+.wix/
+
+# Generated integrity files
+SHA256SUMS.txt
+SOURCE_SHA256SUMS.txt
+release-manifest.json
+
+# Test and tool caches
+.native-test-build/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.clangd/
+.vs/
+.vscode/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.orig
+*.user
+.DS_Store
+Thumbs.db

@@ -1,7 +1,7 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
-    [string]$ProductVersion = '3.9.0',
-    [string]$BundleVersion = '3.9.0.0',
+    [string]$ProductVersion = '',
+    [string]$BundleVersion = '',
     [string]$WixVersion = '5.0.2',
     [switch]$SkipPythonTests
 )
@@ -10,6 +10,9 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $RepositoryRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
+$RepositoryVersion = & (Join-Path $PSScriptRoot 'Get-RepositoryVersion.ps1') -RepositoryRoot $RepositoryRoot
+if ([string]::IsNullOrWhiteSpace($ProductVersion)) { $ProductVersion = $RepositoryVersion.Product }
+if ([string]::IsNullOrWhiteSpace($BundleVersion)) { $BundleVersion = $RepositoryVersion.Bundle }
 $ArtifactsRoot = Join-Path $RepositoryRoot 'artifacts'
 $DistRoot = Join-Path $RepositoryRoot 'dist'
 $PayloadRoot = Join-Path $ArtifactsRoot 'payload'
@@ -23,7 +26,7 @@ $payloadFiles = [ordered]@{
     'AstroFocusSetup.ps1'            = 'installer\AstroFocusSetup.ps1'
     'update-public-key.cer'           = 'updater\update-public-key.cer'
     'README_DE.md'                    = 'README_DE.md'
-    'KNOWN_LIMITATIONS_3_9_0.txt'     = 'KNOWN_LIMITATIONS_3_9_0.txt'
+    'KNOWN_LIMITATIONS.txt'           = 'KNOWN_LIMITATIONS.txt'
     'UNSIGNED_DEVELOPMENT_BUILD.txt'  = 'UNSIGNED_DEVELOPMENT_BUILD.txt'
 }
 
@@ -136,13 +139,13 @@ try {
 }
 
 $binaryMap = [ordered]@{
-    'AstroFocusStudio.exe'       = 'frontend\AstroFocusStudio.exe'
-    'AstroFocusEngine.exe'       = 'backend\AstroFocusEngine.exe'
-    'AstroFocusCameraHost.exe'   = 'device_host\AstroFocusCameraHost.exe'
-    'AstroFocusFocuserHost.exe'  = 'device_host\AstroFocusFocuserHost.exe'
-    'AstroFocusFocuserSetup.exe' = 'focuser_setup\AstroFocusFocuserSetup.exe'
-    'AstroFocusUpdater.exe'      = 'tools\AstroFocusUpdater.exe'
-    'AstroFocusSetup.exe'        = 'tools\AstroFocusSetup.exe'
+    'AstroFocusStudio.exe'       = 'out\windows-x64\bin\AstroFocusStudio.exe'
+    'AstroFocusEngine.exe'       = 'out\windows-x64\bin\AstroFocusEngine.exe'
+    'AstroFocusCameraHost.exe'   = 'out\windows-x64\bin\AstroFocusCameraHost.exe'
+    'AstroFocusFocuserHost.exe'  = 'out\windows-x64\bin\AstroFocusFocuserHost.exe'
+    'AstroFocusFocuserSetup.exe' = 'out\windows-x64\bin\AstroFocusFocuserSetup.exe'
+    'AstroFocusUpdater.exe'      = 'out\windows-x64\bin\AstroFocusUpdater.exe'
+    'AstroFocusSetup.exe'        = 'out\windows-x64\bin\AstroFocusSetup.exe'
 }
 
 foreach ($entry in $binaryMap.GetEnumerator()) {
