@@ -1,9 +1,11 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title AstroFocus Studio 3.9.0 Setup
+set "AFS_VERSION=unbekannt"
+for /f "usebackq delims=" %%V in ("%~dp0..\VERSION") do set "AFS_VERSION=%%V"
+title AstroFocus Studio %AFS_VERSION% Setup
 
-echo AstroFocus Studio 3.9.0 wird installiert.
+echo AstroFocus Studio %AFS_VERSION% wird installiert.
 echo Bitte bestaetigen Sie gegebenenfalls die Windows-Administratorabfrage.
 echo.
 

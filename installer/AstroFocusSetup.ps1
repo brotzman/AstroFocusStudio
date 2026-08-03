@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [ValidateSet('Install','Repair','Uninstall','Rollback','Health')]
     [string]$Mode = 'Install',
@@ -22,8 +22,16 @@ if ([string]::IsNullOrWhiteSpace($Source)) {
     $Source = Join-Path -Path $ScriptDirectory -ChildPath 'payload'
 }
 $ProductName = 'AstroFocus Studio'
-$Version = '3.9.0'
 $InstallRoot = Join-Path $env:ProgramFiles $ProductName
+$Version = ''
+foreach ($candidate in @((Join-Path $Source 'release-manifest.json'), (Join-Path $InstallRoot 'release-manifest.json'), (Join-Path $ScriptDirectory '..\VERSION'))) {
+    if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+    if ([IO.Path]::GetFileName($candidate) -eq 'VERSION') { $Version = (Get-Content -LiteralPath $candidate -Raw -Encoding UTF8).Trim() }
+    else { try { $Version = [string]((Get-Content -LiteralPath $candidate -Raw -Encoding UTF8 | ConvertFrom-Json).version) } catch { $Version = '' } }
+    if ($Version -match '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { break }
+    $Version = ''
+}
+if ([string]::IsNullOrWhiteSpace($Version)) { throw 'Die AstroFocus-Produktversion konnte nicht aus dem Release-Manifest bestimmt werden.' }
 $AdminDataRoot = Join-Path $env:ProgramData 'AstroFocusStudio'
 $RollbackRoot = Join-Path $AdminDataRoot 'InstallerRollback'
 $StatePath = Join-Path $AdminDataRoot 'install-state.json'

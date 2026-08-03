@@ -1,7 +1,11 @@
 [CmdletBinding()]
-param([Parameter(Mandatory=$true)][string]$Payload,[string]$Version='3.9.0')
+param([Parameter(Mandatory=$true)][string]$Payload,[string]$Version='')
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+    $Version = (& (Join-Path $repoRoot 'scripts\Get-RepositoryVersion.ps1') -RepositoryRoot $repoRoot).Product
+}
 $root=(Resolve-Path -LiteralPath $Payload).Path.TrimEnd('\')
 $manifestPath=[IO.Path]::GetFullPath((Join-Path $root 'release-manifest.json'))
 $seen=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)

@@ -13,13 +13,13 @@ from typing import Dict, Iterable, List, Tuple
 SOURCE_MANIFEST = "SOURCE_SHA256SUMS.txt"
 RELEASE_MANIFEST = "SHA256SUMS.txt"
 RELEASE_FILES = {
-    "AstroFocusStudio.exe": "frontend/AstroFocusStudio.exe",
-    "AstroFocusEngine.exe": "backend/AstroFocusEngine.exe",
-    "AstroFocusCameraHost.exe": "device_host/AstroFocusCameraHost.exe",
-    "AstroFocusFocuserHost.exe": "device_host/AstroFocusFocuserHost.exe",
-    "AstroFocusFocuserSetup.exe": "focuser_setup/AstroFocusFocuserSetup.exe",
-    "AstroFocusUpdater.exe": "tools/AstroFocusUpdater.exe",
-    "AstroFocusSetup.exe": "tools/AstroFocusSetup.exe",
+    "AstroFocusStudio.exe": "out/windows-x64/bin/AstroFocusStudio.exe",
+    "AstroFocusEngine.exe": "out/windows-x64/bin/AstroFocusEngine.exe",
+    "AstroFocusCameraHost.exe": "out/windows-x64/bin/AstroFocusCameraHost.exe",
+    "AstroFocusFocuserHost.exe": "out/windows-x64/bin/AstroFocusFocuserHost.exe",
+    "AstroFocusFocuserSetup.exe": "out/windows-x64/bin/AstroFocusFocuserSetup.exe",
+    "AstroFocusUpdater.exe": "out/windows-x64/bin/AstroFocusUpdater.exe",
+    "AstroFocusSetup.exe": "out/windows-x64/bin/AstroFocusSetup.exe",
 }
 EXCLUDED_NAMES = {SOURCE_MANIFEST, RELEASE_MANIFEST, ".DS_Store"}
 EXCLUDED_SUFFIXES = {

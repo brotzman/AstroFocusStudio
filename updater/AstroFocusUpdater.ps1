@@ -13,8 +13,16 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $Product = 'AstroFocus Studio'
-$BundledVersion = [version]'3.9.0'
 $InstallRoot = Join-Path $env:ProgramFiles $Product
+$BundledVersion = [version]'0.0.0'
+foreach ($candidate in @((Join-Path $PSScriptRoot 'release-manifest.json'), (Join-Path $InstallRoot 'release-manifest.json'), (Join-Path $PSScriptRoot '..\VERSION'))) {
+    if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+    try {
+        $text = if ([IO.Path]::GetFileName($candidate) -eq 'VERSION') { (Get-Content -LiteralPath $candidate -Raw -Encoding UTF8).Trim() } else { [string]((Get-Content -LiteralPath $candidate -Raw -Encoding UTF8 | ConvertFrom-Json).version) }
+        if ($text -match '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { $BundledVersion = [version]$text; break }
+    } catch { }
+}
+if ($BundledVersion -eq [version]'0.0.0') { throw 'Die gebündelte AstroFocus-Version konnte nicht bestimmt werden.' }
 $DataRoot = Join-Path $env:LOCALAPPDATA 'AstroFocusStudio'
 $UpdateRoot = Join-Path $DataRoot 'Updates'
 $StagingRoot = Join-Path $UpdateRoot 'staging'

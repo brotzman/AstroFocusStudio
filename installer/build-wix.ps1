@@ -4,8 +4,8 @@ param(
 
     [string]$Output='',
 
-    [string]$ProductVersion = '3.9.0',
-    [string]$BundleVersion = '3.9.0.0',
+    [string]$ProductVersion = '',
+    [string]$BundleVersion = '',
     [string]$WixVersion = '5.0.2',
     [string]$WixExe = 'wix.exe',
     [switch]$DevelopmentBuild
@@ -28,6 +28,10 @@ if ([string]::IsNullOrWhiteSpace($Payload)) {
 if ([string]::IsNullOrWhiteSpace($Output)) {
     $Output = Join-Path -Path $ScriptDirectory -ChildPath 'out'
 }
+$RepositoryRoot = [IO.Path]::GetFullPath((Join-Path $ScriptDirectory '..'))
+$RepositoryVersion = & (Join-Path $RepositoryRoot 'scripts\Get-RepositoryVersion.ps1') -RepositoryRoot $RepositoryRoot
+if ([string]::IsNullOrWhiteSpace($ProductVersion)) { $ProductVersion = $RepositoryVersion.Product }
+if ([string]::IsNullOrWhiteSpace($BundleVersion)) { $BundleVersion = $RepositoryVersion.Bundle }
 
 $payloadFull = [IO.Path]::GetFullPath($Payload)
 $outputFull = [IO.Path]::GetFullPath($Output)
@@ -53,7 +57,7 @@ $msiPath = Join-Path $outputFull "AstroFocusStudio-$ProductVersion-x64.msi"
 $bundlePath = Join-Path $outputFull "AstroFocusStudio-$ProductVersion-Setup.exe"
 $intermediate = Join-Path $outputFull 'intermediate'
 $extensionRef = "WixToolset.BootstrapperApplications.wixext/$WixVersion"
-$iconPath = [IO.Path]::GetFullPath((Join-Path $ScriptDirectory '..\frontend\AstroFocusStudio.ico'))
+$iconPath = [IO.Path]::GetFullPath((Join-Path $ScriptDirectory '..\assets\AstroFocusStudio.ico'))
 
 foreach ($required in @($packageSource, $bundleSource, $iconPath)) {
     if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
