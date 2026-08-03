@@ -15,6 +15,24 @@ CLEAN=0
 RELEASE=0
 COMPONENT="all"
 
+WINDOWS_POSIX_SHELL=0
+case "$(uname -s 2>/dev/null || true)" in
+  MINGW*|MSYS*|CYGWIN*) WINDOWS_POSIX_SHELL=1 ;;
+esac
+
+if ((WINDOWS_POSIX_SHELL)); then
+  command -v cygpath >/dev/null 2>&1 || { echo "Required tool not found in Windows POSIX shell: cygpath" >&2; exit 2; }
+fi
+
+native_path(){
+  local path="$1"
+  if ((WINDOWS_POSIX_SHELL)); then
+    cygpath -am "$path"
+  else
+    printf '%s\n' "$path"
+  fi
+}
+
 usage(){
   cat <<EOF
 Usage: ./build-windows-x64.sh [--clean] [--test] [--release] [--component NAME]
@@ -49,8 +67,12 @@ VERSION="$(tr -d '\r\n' < "$ROOT/VERSION")"
 make_import_lib(){
   local component="$1" name="$2" source_dir="$3"
   local obj_dir="$OBJ_ROOT/$component" lib_dir="$obj_dir/lib"
+  local def_path dll_path lib_path
   mkdir -p "$lib_dir"
-  "$LLD_LINK" -nologo -machine:x64 -dll -noentry "-def:$source_dir/$name.def" "-out:$lib_dir/${name}_stub.dll" "-implib:$lib_dir/$name.lib"
+  def_path="$(native_path "$source_dir/$name.def")"
+  dll_path="$(native_path "$lib_dir/${name}_stub.dll")"
+  lib_path="$(native_path "$lib_dir/$name.lib")"
+  "$LLD_LINK" -nologo -machine:x64 -dll -noentry "-def:$def_path" "-out:$dll_path" "-implib:$lib_path"
   rm -f "$lib_dir/${name}_stub.dll"
 }
 
@@ -68,20 +90,31 @@ make_resources(){
 compile_common(){
   local component="$1" source_dir="$2"
   local obj_dir="$OBJ_ROOT/$component"
+  local chkstk_source chkstk_object cookie_source cookie_object entry_source entry_object
   mkdir -p "$obj_dir"
-  "$CLANG" -target x86_64-pc-windows-msvc -c "$source_dir/chkstk.s" -o "$obj_dir/chkstk.obj"
-  "$CLANG_CL" -nologo -W4 -WX -O2 -GS- -c "$ROOT/common/security_cookie.cpp" "-Fo:$obj_dir/security_cookie.obj"
-  "$CLANG_CL" -nologo -W4 -WX -O2 -GS- -c "$ROOT/common/security_entry.cpp" "-Fo:$obj_dir/security_entry.obj"
+  chkstk_source="$(native_path "$source_dir/chkstk.s")"
+  chkstk_object="$(native_path "$obj_dir/chkstk.obj")"
+  cookie_source="$(native_path "$ROOT/common/security_cookie.cpp")"
+  cookie_object="$(native_path "$obj_dir/security_cookie.obj")"
+  entry_source="$(native_path "$ROOT/common/security_entry.cpp")"
+  entry_object="$(native_path "$obj_dir/security_entry.obj")"
+  "$CLANG" -target x86_64-pc-windows-msvc -c "$chkstk_source" -o "$chkstk_object"
+  "$CLANG_CL" -nologo -W4 -WX -O2 -GS- -c "$cookie_source" "-Fo:$cookie_object"
+  "$CLANG_CL" -nologo -W4 -WX -O2 -GS- -c "$entry_source" "-Fo:$entry_object"
 }
 
 link_app(){
   local component="$1" exe="$2" object="$3" res="$4"; shift 4
   local obj_dir="$OBJ_ROOT/$component" lib_dir="$obj_dir/lib"
   local args=(-nologo -machine:x64 -timestamp:0 -subsystem:windows -entry:WinMainCRTStartup -nodefaultlib
-    "$object" "$obj_dir/security_cookie.obj" "$obj_dir/security_entry.obj" "$obj_dir/chkstk.obj" "$res")
+    "$(native_path "$object")"
+    "$(native_path "$obj_dir/security_cookie.obj")"
+    "$(native_path "$obj_dir/security_entry.obj")"
+    "$(native_path "$obj_dir/chkstk.obj")"
+    "$(native_path "$res")")
   local lib
-  for lib in "$@"; do args+=("$lib_dir/$lib.lib"); done
-  args+=("-out:$BIN_DIR/$exe")
+  for lib in "$@"; do args+=("$(native_path "$lib_dir/$lib.lib")"); done
+  args+=("-out:$(native_path "$BIN_DIR/$exe")")
   "$LLD_LINK" "${args[@]}"
 }
 
@@ -89,7 +122,7 @@ build_frontend(){
   local component=frontend source_dir="$ROOT/frontend" obj_dir="$OBJ_ROOT/frontend"
   for lib in kernel32 user32 gdi32 msvcrt; do make_import_lib "$component" "$lib" "$source_dir"; done
   compile_common "$component" "$source_dir"
-  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -c "$source_dir/frontend.cpp" "-Fo:$obj_dir/frontend.obj"
+  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -c "$(native_path "$source_dir/frontend.cpp")" "-Fo:$(native_path "$obj_dir/frontend.obj")"
   local res; res="$(make_resources "$component" AstroFocusStudio.exe 'AstroFocus Studio user interface')"
   link_app "$component" AstroFocusStudio.exe "$obj_dir/frontend.obj" "$res" kernel32 user32 gdi32 msvcrt
 }
@@ -98,7 +131,7 @@ build_backend(){
   local component=backend source_dir="$ROOT/backend" obj_dir="$OBJ_ROOT/backend"
   for lib in kernel32 user32 gdi32 ole32 oleaut32 msvcrt kernel_extra user_extra; do make_import_lib "$component" "$lib" "$source_dir"; done
   compile_common "$component" "$source_dir"
-  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -c "$source_dir/backend.cpp" "-Fo:$obj_dir/backend.obj"
+  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -c "$(native_path "$source_dir/backend.cpp")" "-Fo:$(native_path "$obj_dir/backend.obj")"
   local res; res="$(make_resources "$component" AstroFocusEngine.exe 'AstroFocus Studio focus engine')"
   link_app "$component" AstroFocusEngine.exe "$obj_dir/backend.obj" "$res" kernel32 user32 gdi32 ole32 oleaut32 msvcrt kernel_extra user_extra
 }
@@ -107,7 +140,7 @@ build_focuser_setup(){
   local component=focuser_setup source_dir="$ROOT/focuser_setup" obj_dir="$OBJ_ROOT/focuser_setup"
   for lib in kernel32 user32 ole32 oleaut32 msvcrt; do make_import_lib "$component" "$lib" "$source_dir"; done
   compile_common "$component" "$source_dir"
-  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -c "$source_dir/focuser_setup.cpp" "-Fo:$obj_dir/focuser_setup.obj"
+  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -c "$(native_path "$source_dir/focuser_setup.cpp")" "-Fo:$(native_path "$obj_dir/focuser_setup.obj")"
   local res; res="$(make_resources "$component" AstroFocusFocuserSetup.exe 'AstroFocus Studio focuser setup')"
   link_app "$component" AstroFocusFocuserSetup.exe "$obj_dir/focuser_setup.obj" "$res" kernel32 user32 ole32 oleaut32 msvcrt
 }
@@ -119,9 +152,9 @@ build_device_host(){
   local res_camera res_focuser
   res_camera="$(make_resources camera_host AstroFocusCameraHost.exe 'AstroFocus Studio camera host')"
   res_focuser="$(make_resources focuser_host AstroFocusFocuserHost.exe 'AstroFocus Studio focuser host')"
-  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -DASTROFOCUS_HOST_CAMERA=1 -c "$source_dir/device_host.cpp" "-Fo:$obj_dir/camera_host.obj"
+  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -DASTROFOCUS_HOST_CAMERA=1 -c "$(native_path "$source_dir/device_host.cpp")" "-Fo:$(native_path "$obj_dir/camera_host.obj")"
   link_app "$component" AstroFocusCameraHost.exe "$obj_dir/camera_host.obj" "$res_camera" kernel32 ole32 oleaut32
-  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -DASTROFOCUS_HOST_CAMERA=0 -c "$source_dir/device_host.cpp" "-Fo:$obj_dir/focuser_host.obj"
+  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -DASTROFOCUS_HOST_CAMERA=0 -c "$(native_path "$source_dir/device_host.cpp")" "-Fo:$(native_path "$obj_dir/focuser_host.obj")"
   link_app "$component" AstroFocusFocuserHost.exe "$obj_dir/focuser_host.obj" "$res_focuser" kernel32 ole32 oleaut32
 }
 
@@ -132,9 +165,9 @@ build_tools(){
   local res_updater res_setup
   res_updater="$(make_resources updater AstroFocusUpdater.exe 'AstroFocus Studio updater')"
   res_setup="$(make_resources setup AstroFocusSetup.exe 'AstroFocus Studio setup launcher')"
-  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -c "$source_dir/updater_launcher.cpp" "-Fo:$obj_dir/updater_launcher.obj"
+  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -c "$(native_path "$source_dir/updater_launcher.cpp")" "-Fo:$(native_path "$obj_dir/updater_launcher.obj")"
   link_app "$component" AstroFocusUpdater.exe "$obj_dir/updater_launcher.obj" "$res_updater" kernel32 user32
-  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -c "$source_dir/setup_launcher.cpp" "-Fo:$obj_dir/setup_launcher.obj"
+  "$CLANG_CL" -nologo -W4 -WX -O2 -GS -DUNICODE -D_UNICODE -c "$(native_path "$source_dir/setup_launcher.cpp")" "-Fo:$(native_path "$obj_dir/setup_launcher.obj")"
   link_app "$component" AstroFocusSetup.exe "$obj_dir/setup_launcher.obj" "$res_setup" kernel32 user32
 }
 

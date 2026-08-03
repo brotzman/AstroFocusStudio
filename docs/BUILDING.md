@@ -47,3 +47,12 @@ The central Bash build deliberately passes LLVM/COFF options with a leading dash
 MSVC-style slash spelling in a Bash script: Git for Windows/MSYS can interpret
 `/nologo` as a POSIX path and rewrite it to `C:/Program Files/Git/nologo`.
 Windows-only PowerShell or batch scripts may still use slash-style switches.
+
+Paths embedded in LLVM options need separate handling. For example, MSYS does
+not rewrite the path portion of `-Fo:/d/a/...`; `clang-cl.exe` would therefore
+receive a POSIX path it cannot open. The central build detects MINGW, MSYS and
+Cygwin shells and converts all paths passed to native LLVM programs with
+`cygpath -am`, producing values such as `D:/a/...`. Do not remove the
+`native_path` calls or replace them with a global `MSYS2_ARG_CONV_EXCL=*`, since
+the latter can hide argument bugs and prevent valid source paths from being
+converted.
