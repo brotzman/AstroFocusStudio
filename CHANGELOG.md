@@ -5,6 +5,7 @@ notes for the current release are in `RELEASE_NOTES.txt`.
 
 ## Corrective maintenance
 
+- Resolve Git for Windows Bash explicitly in the MSYS argument regression test; the Windows WSL launcher (`System32\bash.exe`) and WindowsApps aliases are rejected before execution.
 - Make version consistency checks independent of Windows CRLF checkout conversion and Windows wildcard behaviour; generated headers are compared by text and versioned test filenames are detected with an explicit semantic-version pattern.
 - Pin C/C++ header files to LF in `.gitattributes` so generated version headers remain byte-stable across platforms.
 - Prevent Git for Windows/MSYS from rewriting LLVM COFF switches such as `/nologo` into paths like `C:/Program Files/Git/nologo`; the Bash build now uses LLVM-compatible dash-prefixed options.

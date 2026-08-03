@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -39,8 +41,101 @@ def write_executable(path: Path, body: str) -> None:
     path.chmod(0o755)
 
 
+def _is_working_gnu_bash(candidate: Path) -> bool:
+    """Accept GNU Bash itself, but reject the Windows WSL launcher."""
+    if not candidate.is_file():
+        return False
+    normalized = candidate.as_posix().lower()
+    if normalized.endswith("/windows/system32/bash.exe") or "/windowsapps/" in normalized:
+        return False
+    try:
+        probe = subprocess.run(
+            [str(candidate), "--version"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return probe.returncode == 0 and "gnu bash" in probe.stdout.lower()
+
+
+def resolve_test_bash() -> tuple[Path | None, str]:
+    """Resolve Git for Windows Bash explicitly instead of accidentally launching WSL."""
+    candidates: list[Path] = []
+
+    def add(value: str | os.PathLike[str] | None) -> None:
+        if not value:
+            return
+        path = Path(value).expanduser()
+        if path not in candidates:
+            candidates.append(path)
+
+    for variable in ("ASTROFOCUS_GIT_BASH", "GIT_BASH_EXE"):
+        add(os.environ.get(variable))
+
+    if os.name == "nt":
+        for variable in ("ProgramFiles", "ProgramW6432", "ProgramFiles(x86)"):
+            base = os.environ.get(variable)
+            if base:
+                add(Path(base) / "Git" / "bin" / "bash.exe")
+                add(Path(base) / "Git" / "usr" / "bin" / "bash.exe")
+        local_app_data = os.environ.get("LOCALAPPDATA")
+        if local_app_data:
+            add(Path(local_app_data) / "Programs" / "Git" / "bin" / "bash.exe")
+            add(Path(local_app_data) / "Programs" / "Git" / "usr" / "bin" / "bash.exe")
+
+        git = shutil.which("git")
+        if git:
+            git_path = Path(git)
+            # Normal Git for Windows PATH entry: <root>/cmd/git.exe.
+            add(git_path.parent.parent / "bin" / "bash.exe")
+            add(git_path.parent.parent / "usr" / "bin" / "bash.exe")
+            try:
+                probe = subprocess.run(
+                    [git, "--exec-path"],
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    timeout=10,
+                    check=False,
+                )
+                if probe.returncode == 0 and probe.stdout.strip():
+                    exec_path = Path(probe.stdout.strip())
+                    for parent in (exec_path, *exec_path.parents):
+                        if parent.name.lower() == "git":
+                            add(parent / "bin" / "bash.exe")
+                            add(parent / "usr" / "bin" / "bash.exe")
+                            break
+            except (OSError, subprocess.SubprocessError):
+                pass
+    else:
+        add(shutil.which("bash"))
+
+    # PATH is a last resort. On Windows this may be System32\bash.exe (WSL),
+    # which _is_working_gnu_bash deliberately rejects.
+    add(shutil.which("bash"))
+
+    rejected: list[str] = []
+    for candidate in candidates:
+        if _is_working_gnu_bash(candidate):
+            return candidate, f"using {candidate}"
+        if candidate.exists():
+            rejected.append(str(candidate))
+    detail = "Git Bash not found"
+    if rejected:
+        detail += f"; rejected non-GNU/WSL launcher(s): {', '.join(rejected)}"
+    return None, detail
+
+
 def run_msys_simulation() -> tuple[bool, str]:
     """Run the frontend build with fake native tools and a fake MINGW shell."""
+    bash, bash_detail = resolve_test_bash()
+    if bash is None:
+        return False, bash_detail
+
     with tempfile.TemporaryDirectory(prefix="afs-msys-test-") as tmp:
         temp = Path(tmp)
         fake_bin = temp / "bin"
@@ -73,11 +168,13 @@ printf 'C:/mock%s\\n' "$path"
                 "CLANG": "clang",
                 "CLANG_CL": "clang-cl",
                 "LLD_LINK": "lld-link",
-                "PYTHON": os.environ.get("PYTHON", "python3"),
+                # Use the interpreter executing this test. Git Bash can launch the
+                # mixed-form path, and MSYS converts its following file arguments.
+                "PYTHON": Path(sys.executable).as_posix(),
             }
         )
         result = subprocess.run(
-            ["bash", str(BUILD), "--clean", "--component", "frontend"],
+            [str(bash), str(BUILD), "--clean", "--component", "frontend"],
             cwd=ROOT,
             env=env,
             text=True,
@@ -86,7 +183,10 @@ printf 'C:/mock%s\\n' "$path"
             check=False,
         )
         if result.returncode != 0:
-            return False, f"simulated build failed ({result.returncode}): {result.stdout.strip()}"
+            return False, (
+                f"simulated build failed ({result.returncode}; {bash_detail}): "
+                f"{result.stdout.strip()}"
+            )
         if not log.exists():
             return False, "simulated native tools produced no argument log"
 
@@ -117,7 +217,8 @@ printf 'C:/mock%s\\n' "$path"
             problems.append("no native source/object/resource inputs were logged")
         if bad_native_inputs:
             problems.append(f"native input paths were not converted: {bad_native_inputs}")
-        return not problems, "; ".join(problems) if problems else f"{len(lines)} native tool invocations checked"
+        success_detail = f"{len(lines)} native tool invocations checked; {bash_detail}"
+        return not problems, "; ".join(problems) if problems else success_detail
 
 
 simulation_ok, simulation_detail = run_msys_simulation()
@@ -132,6 +233,8 @@ checks = {
     "no MSVC-style slash switch reaches native LLVM from Bash": not violations,
     "no raw POSIX path is embedded in LLVM output options": not raw_path_violations,
     "no global path-conversion disable masks path bugs": "MSYS2_ARG_CONV_EXCL=*" not in text and "MSYS_NO_PATHCONV=1" not in text,
+    "Windows test resolver searches Git for Windows explicitly": 'Path(base) / "Git" / "bin" / "bash.exe"' in Path(__file__).read_text(encoding="utf-8"),
+    "Windows test resolver rejects WSL and WindowsApps launchers": 'windows/system32/bash.exe' in Path(__file__).read_text(encoding="utf-8") and '"/windowsapps/"' in Path(__file__).read_text(encoding="utf-8"),
     "simulated Git Bash build passes Windows paths to native LLVM": simulation_ok,
 }
 
