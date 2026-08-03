@@ -41,7 +41,10 @@ with tempfile.TemporaryDirectory() as temporary:
         text=True,
     )
     check("version header generator succeeds", result.returncode == 0)
-    check("committed version header is generated from VERSION", generated.read_bytes() == (ROOT / "common/version.h").read_bytes())
+    check(
+        "committed version header is generated from VERSION",
+        generated.read_text(encoding="utf-8") == (ROOT / "common/version.h").read_text(encoding="utf-8"),
+    )
 
 frontend = read("frontend/frontend.cpp")
 backend = read("backend/backend.cpp")
@@ -67,8 +70,15 @@ check("release manifest resolves empty version from VERSION", "Get-RepositoryVer
 
 check("release notes use a stable filename", (ROOT / "RELEASE_NOTES.txt").is_file() and not list(ROOT.glob("RELEASE_NOTES_*.*")))
 check("known limitations use a stable filename", (ROOT / "KNOWN_LIMITATIONS.txt").is_file() and not list(ROOT.glob("KNOWN_LIMITATIONS_*.*")))
-versioned_tests = sorted((ROOT / "tests").glob("*validation_*.*"))
+version_pattern = re.compile(r"(?:^|[_\-.])\d+[_\-.]\d+[_\-.]\d+(?:[_\-.]|$)")
+versioned_tests = sorted(
+    path.name
+    for path in (ROOT / "tests").iterdir()
+    if path.is_file() and version_pattern.search(path.stem)
+)
 check("regression test filenames are version-independent", not versioned_tests)
+if versioned_tests:
+    print("VERSIONED TESTS:", ", ".join(versioned_tests))
 run_python = read("scripts/Run-PythonTests.ps1")
 run_native = read("scripts/Run-NativeTests.sh")
 check("Python runner discovers stable test names", "*_validation.py" in run_python and "_390" not in run_python)
