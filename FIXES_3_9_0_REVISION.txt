@@ -36,3 +36,9 @@ Nachprüfung des Frontend-Starts
 - Das Hauptfenster wird vor dem synchronen Engine-Handshake angezeigt; Engine- oder Winsockfehler lassen das Diagnosefenster geöffnet.
 - Frühe Startabbrüche besitzen sichtbare Meldungen, Startphasen und einen benutzerspezifisch beschreibbaren Tracepfad.
 - Eine unsichere Traceformatierung mit festem 420-Byte-Gesamtpuffer wurde durch begrenzte Teilschreibvorgänge ersetzt.
+
+Frontend start crash after first engine status (2026-08-03)
+- Removed unsupported %+d formatting from USER32 wsprintfW calls.
+- Signed values are now produced by a bounded formatter and inserted as strings.
+- Added granular UI-update crash phases and a format-contract regression test.
+- Continuous-focus status text is now assembled with bounded appends instead of legacy USER32 formatting.

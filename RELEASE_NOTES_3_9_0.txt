@@ -37,3 +37,9 @@ Startstabilität und Diagnose
 - FrontendTrace.log liegt nun im beschreibbaren Benutzerprofil unter %LOCALAPPDATA%\AstroFocusStudio\Logs; %TEMP% dient als Fallback.
 - Der Ausnahmehandler schreibt lange Diagnosetexte in begrenzten Teilschritten und kann dadurch die ursprüngliche Ausnahme nicht mehr durch einen eigenen Pufferüberlauf verdecken.
 - Der Windows-Installer-Smoke-Test startet nach MSI- und Burn-Installation erstmals die reale AstroFocusStudio.exe, verlangt ein sichtbares und reagierendes Hauptfenster und prüft einen sauberen WM_CLOSE-Abschluss.
+
+Startkorrektur nach erstem Statusabruf
+- Entfernt nicht unterstützte %+d-Formatierung aus USER32-wsprintfW-Aufrufen.
+- Vorzeichen werden nun begrenzt und explizit formatiert.
+- UI-Aktualisierung besitzt feinere Diagnosephasen für künftige Startfehler.
+- GitHub-GUI-Smoke-Test bleibt Bestandteil beider Installerpfade.

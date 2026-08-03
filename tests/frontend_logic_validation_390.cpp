@@ -89,6 +89,9 @@ int main(){
     Layout(1920,1080);
     total++;pass+=check(g_preview.right<g_rightAnalysis.left&&g_page.right<g_rightAnalysis.left,"Frontend: maximiertes Layout ohne Überlappung");
     wchar_t fd[32];FormatD(1.999,2,fd);total++;pass+=check(fd[0]==L'2'&&fd[1]==L','&&fd[2]==L'0'&&fd[3]==L'0',"Frontend: Dezimalrundung mit Übertrag");
+    wchar_t signedValue[32];FormatSignedInt(7,signedValue,32);total++;pass+=check(WEqual(signedValue,L"+7"),"Frontend: positives Vorzeichen wird ohne wsprintf-Plusflag formatiert");
+    FormatSignedInt(0,signedValue,32);total++;pass+=check(WEqual(signedValue,L"0"),"Frontend: Nullwert bleibt ohne positives Vorzeichen");
+    FormatSignedInt(-7,signedValue,32);total++;pass+=check(WEqual(signedValue,L"-7"),"Frontend: negatives Vorzeichen bleibt erhalten");
     total++;pass+=check(WEqual(g_state.version,L"3.9.0"),"Frontend: exakte Engine-Version geparst");
     total++;pass+=check(IsSafeUvcDeviceName(L"USB Camera")&&!IsSafeUvcDeviceName(L"USB \"Camera")&&!IsSafeUvcDeviceName(L"USB\nCamera"),"Frontend: UVC-Gerätenamen gegen Befehlsbruch validiert");
     wchar_t escapedText[64];JString("{\"x\":\"A\\nB\\\"C\"}","x",escapedText,64);total++;pass+=check(escapedText[0]==L'A'&&escapedText[1]==L'\n'&&escapedText[2]==L'B'&&escapedText[3]==L'\"'&&escapedText[4]==L'C',"Frontend: JSON-String-Escapes korrekt");

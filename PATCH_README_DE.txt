@@ -1,24 +1,10 @@
-AstroFocus Studio 3.9.0 – Patch für veraltete Root-Prüfsummen
+AstroFocus Studio 3.9.0 – UI-Startabsturz-Fix
 
-Ursache:
-Eine alte, bereits eingecheckte SHA256SUMS.txt aus Version 3.8.8 wurde vom
-Versionskonsistenztest gefunden. Diese Datei ist ein generiertes Release-Artefakt
-und gehört nicht in den Repository-Stamm.
+Den Inhalt dieses ZIPs in das Hauptverzeichnis des bestehenden 3.9.0-GitHub-Repositorys kopieren und vorhandene Dateien ersetzen.
 
-Anwendung:
-1. Den Inhalt dieses ZIPs in das Hauptverzeichnis des Repositorys kopieren.
-2. Vorhandene Dateien ersetzen.
-3. Cleanup-Legacy-Version-Files.cmd ausführen.
-4. Danach unbedingt ausführen:
+Danach:
+  git add -A
+  git commit -m "Fix frontend crash during first UI status update"
+  git push
 
-   git add -A
-   git commit -m "Remove stale generated checksum artifacts"
-   git push
-
-Die Bereinigung entfernt im Repository-Stamm nur diese explizit erlaubten
-generierten Dateien:
-- SHA256SUMS.txt
-- SOURCE_SHA256SUMS.txt
-- release-manifest.json
-
-Die beim Build unter dist erzeugten aktuellen 3.9.0-Dateien werden nicht entfernt.
+Der Fix entfernt nicht unterstützte %+d-Formatierung aus USER32-wsprintfW, baut den Nachführungsstatus begrenzt ohne wsprintfW auf und ergänzt Regressionstests.
