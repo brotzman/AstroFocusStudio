@@ -31,6 +31,18 @@ OBSOLETE_PATCH_FILES = (
     Path("PATCH_README.txt"),
 )
 
+# These files existed before resources were centralized under assets/ and out/.
+# They are explicitly allow-listed because copying a clean source archive over an
+# existing checkout does not delete formerly tracked files.
+DUPLICATE_RESOURCE_FILES = (
+    Path("frontend/AstroFocusStudio.ico"),
+    Path("backend/AstroFocusStudio.ico"),
+    Path("focuser_setup/AstroFocusStudio.ico"),
+    Path("frontend/app.res"),
+    Path("backend/app.res"),
+    Path("focuser_setup/app.res"),
+)
+
 LEGACY_FILES = (
     Path("KNOWN_LIMITATIONS_3_9_0.txt"),
     Path("RELEASE_NOTES_3_9_0.txt"),
@@ -94,6 +106,7 @@ def main() -> int:
     existing_legacy = [path for path in LEGACY_FILES if (root / path).is_file()]
     existing_generated = [path for path in GENERATED_ROOT_FILES if (root / path).is_file()]
     existing_patch = [path for path in OBSOLETE_PATCH_FILES if (root / path).is_file()]
+    existing_duplicate_resources = [path for path in DUPLICATE_RESOURCE_FILES if (root / path).is_file()]
 
     if args.check_only:
         failed = False
@@ -109,16 +122,20 @@ def main() -> int:
             failed = True
             lines.append("ERROR: obsolete patch metadata is still present:")
             lines.extend(f"  - {path}" for path in existing_patch)
+        if existing_duplicate_resources:
+            failed = True
+            lines.append("ERROR: duplicate centralized resource files are still present:")
+            lines.extend(f"  - {path}" for path in existing_duplicate_resources)
         if failed:
             _write_log(args.log, root, lines)
             print("\n".join(lines), file=sys.stderr)
             return 1
-        lines.append("PASS: no superseded files, generated root artifacts, or patch metadata are present.")
+        lines.append("PASS: no superseded files, generated root artifacts, patch metadata, or duplicate resources are present.")
         _write_log(args.log, root, lines)
         print("\n".join(lines))
         return 0
 
-    cleanup_files = LEGACY_FILES + GENERATED_ROOT_FILES + OBSOLETE_PATCH_FILES
+    cleanup_files = LEGACY_FILES + GENERATED_ROOT_FILES + OBSOLETE_PATCH_FILES + DUPLICATE_RESOURCE_FILES
     for relative in cleanup_files:
         candidate = (root / relative).resolve()
         try:
@@ -143,6 +160,7 @@ def main() -> int:
     lines.append(f"PASS: removed {len(existing_legacy)} superseded 3.8.8 file(s).")
     lines.append(f"PASS: removed {len(existing_generated)} generated root artifact(s).")
     lines.append(f"PASS: removed {len(existing_patch)} obsolete patch metadata file(s).")
+    lines.append(f"PASS: removed {len(existing_duplicate_resources)} duplicate centralized resource file(s).")
     _write_log(args.log, root, lines)
     print("\n".join(lines))
     return 0
