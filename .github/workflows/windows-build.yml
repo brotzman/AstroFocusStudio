@@ -16,7 +16,7 @@ on:
       release_tag:
         description: 'Release-Tag; muss zur PRODUCT_VERSION passen'
         required: true
-        default: 'v3.8.8'
+        default: 'v3.9.0'
         type: string
 
 permissions:
@@ -27,8 +27,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PRODUCT_VERSION: '3.8.8'
-  BUNDLE_VERSION: '3.8.8.0'
+  PRODUCT_VERSION: '3.9.0'
+  BUNDLE_VERSION: '3.9.0.0'
   WIX_VERSION: '5.0.2'
 
 jobs:
@@ -146,9 +146,14 @@ jobs:
             'scripts\Run-PythonTests.ps1',
             'scripts\Test-GitHubInstaller.ps1',
             'scripts\Run-NativeTests.sh',
-            'tests\github_workflow_validation_388.py',
+            'tests\github_workflow_validation_390.py',
+            'tests\version_consistency_validation_390.py',
+            'tests\continuous_focus_validation_390.py',
+            'tests\continuous_focus_layout_validation_390.py',
+            'tests\continuous_focus_logic_validation_390.cpp',
             'build-all-windows-x64.bat',
             'common\security_entry.cpp',
+            'common\continuous_focus_logic.h',
             'installer\build-wix.ps1',
             'installer\wix\Package.wxs',
             'installer\wix\Bundle.wxs',
@@ -157,7 +162,7 @@ jobs:
             'updater\update-public-key.cer',
             'release\New-ReleaseManifest.ps1',
             'README_DE.md',
-            'KNOWN_LIMITATIONS_3_8_8.txt',
+            'KNOWN_LIMITATIONS_3_9_0.txt',
             'UNSIGNED_DEVELOPMENT_BUILD.txt'
           )
           $optionalMetadata = @('.gitattributes', '.gitignore')
